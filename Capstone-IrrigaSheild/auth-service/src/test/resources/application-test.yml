@@ -1,12 +1,13 @@
 spring:
   r2dbc:
-    url: r2dbc:mysql://localhost:3306/irrigashield_auth_test_db
+    url: r2dbc:mysql://localhost:3306/irrigashield_auth_test_db?createDatabaseIfNotExist=true
     username: root
     password:
 
   sql:
     init:
       mode: always
+      continue-on-error: true
       schema-locations:
         - classpath:schema-test.sql
 

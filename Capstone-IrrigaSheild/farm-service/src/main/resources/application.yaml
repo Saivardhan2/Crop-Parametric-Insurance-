@@ -3,13 +3,14 @@ spring:
     name: farm-service
 
   r2dbc:
-    url: r2dbc:mysql://localhost:3306/irrigashield_farm_db
+    url: r2dbc:mysql://localhost:3306/irrigashield_farm_db?createDatabaseIfNotExist=true
     username: root
     password: ${DB_PASSWORD:root}
 
   sql:
     init:
       mode: always
+      continue-on-error: true
       schema-locations:
         - classpath:schema.sql
 
@@ -24,6 +25,7 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
 
   instance:
+    ip-address: 127.0.0.1
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
 

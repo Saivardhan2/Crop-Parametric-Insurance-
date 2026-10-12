@@ -193,3 +193,9 @@ CREATE TABLE IF NOT EXISTS policies (
     INDEX idx_policies_farmer (farmer_user_id),
     INDEX idx_policies_status (status)
     );
+
+-- Automatic schema migration for existing databases
+ALTER TABLE payout_slabs MODIFY COLUMN minimum_duration_hours INT DEFAULT 0;
+ALTER TABLE payout_slabs ADD COLUMN min_availability_pct DECIMAL(5, 2) NULL;
+ALTER TABLE payout_slabs ADD COLUMN max_availability_pct DECIMAL(5, 2) NULL;
+ALTER TABLE payout_slabs DROP INDEX uk_payout_slab_duration;

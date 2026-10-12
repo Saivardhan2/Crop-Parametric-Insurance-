@@ -48,3 +48,6 @@ CREATE TABLE IF NOT EXISTS claims (
     INDEX idx_claims_farmer (farmer_user_id),
     INDEX idx_claims_status (status)
 );
+
+-- Automatic schema migration for existing databases
+ALTER TABLE claims ADD COLUMN event_date DATE NULL;

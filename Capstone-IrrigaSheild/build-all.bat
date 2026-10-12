@@ -1,12 +1,24 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-REM Detect JAVA_HOME if not already set in environment
+REM Detect JAVA_HOME if not already set or invalid in environment
+if defined JAVA_HOME (
+    if not exist "%JAVA_HOME%\bin\java.exe" set "JAVA_HOME="
+)
 if not defined JAVA_HOME (
-    if exist "C:\Program Files\JetBrains\IntelliJ IDEA 2026.2.3\jbr" (
-        set "JAVA_HOME=C:\Program Files\JetBrains\IntelliJ IDEA 2026.2.3\jbr"
-        set "PATH=!JAVA_HOME!\bin;!PATH!"
+    for /f "delims=" %%I in ('where java 2^>nul') do (
+        if not defined JAVA_HOME (
+            for %%D in ("%%~dpI..") do set "JAVA_HOME=%%~fD"
+        )
     )
+)
+if not defined JAVA_HOME (
+    for /d %%D in ("C:\Program Files\JetBrains\IntelliJ*\jbr" "C:\Program Files\Java\jdk*" "C:\Program Files\Eclipse Adoptium\jdk*" "C:\Program Files\Microsoft\jdk*") do (
+        if exist "%%~fD\bin\java.exe" set "JAVA_HOME=%%~fD"
+    )
+)
+if defined JAVA_HOME (
+    set "PATH=!JAVA_HOME!\bin;!PATH!"
 )
 
 REM ==============================================================================
@@ -125,12 +137,24 @@ exit /b 0
 
 set "SERVICE=%~2"
 
-REM Detect JAVA_HOME if not already set in environment
+REM Detect JAVA_HOME if not already set or invalid in environment
+if defined JAVA_HOME (
+    if not exist "%JAVA_HOME%\bin\java.exe" set "JAVA_HOME="
+)
 if not defined JAVA_HOME (
-    if exist "C:\Program Files\JetBrains\IntelliJ IDEA 2026.2.3\jbr" (
-        set "JAVA_HOME=C:\Program Files\JetBrains\IntelliJ IDEA 2026.2.3\jbr"
-        set "PATH=!JAVA_HOME!\bin;!PATH!"
+    for /f "delims=" %%I in ('where java 2^>nul') do (
+        if not defined JAVA_HOME (
+            for %%D in ("%%~dpI..") do set "JAVA_HOME=%%~fD"
+        )
     )
+)
+if not defined JAVA_HOME (
+    for /d %%D in ("C:\Program Files\JetBrains\IntelliJ*\jbr" "C:\Program Files\Java\jdk*" "C:\Program Files\Eclipse Adoptium\jdk*" "C:\Program Files\Microsoft\jdk*") do (
+        if exist "%%~fD\bin\java.exe" set "JAVA_HOME=%%~fD"
+    )
+)
+if defined JAVA_HOME (
+    set "PATH=!JAVA_HOME!\bin;!PATH!"
 )
 
 echo [%SERVICE%] Running clean package...

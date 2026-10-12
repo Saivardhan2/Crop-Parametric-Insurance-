@@ -157,6 +157,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .getHeaders()
                 .setContentType(MediaType.APPLICATION_JSON);
 
+        String origin = exchange.getRequest().getHeaders().getOrigin();
+        if (origin != null && !exchange.getResponse().getHeaders().containsKey("Access-Control-Allow-Origin")) {
+            exchange.getResponse().getHeaders().add("Access-Control-Allow-Origin", origin);
+            exchange.getResponse().getHeaders().add("Access-Control-Allow-Credentials", "true");
+        }
+
         DataBuffer buffer = exchange
                 .getResponse()
                 .bufferFactory()
