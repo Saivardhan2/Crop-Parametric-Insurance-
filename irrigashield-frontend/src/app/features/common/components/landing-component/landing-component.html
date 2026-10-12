@@ -1,0 +1,215 @@
+<div class="w-[92%] max-w-7xl mx-auto py-8 space-y-10">
+
+  <!-- Hero Section -->
+  <section class="bg-white border border-[#EAE5DF] rounded-2xl p-8 sm:p-10 lg:p-12 shadow-sm">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+
+      <!-- Left Column: Headline, Copy, CTAs & Highlights -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EAE5DF] text-[#75013F] text-xs font-bold tracking-wider uppercase">
+          <span class="w-2 h-2 rounded-full bg-[#FE3082]"></span>
+          Smart Irrigation &amp; Crop Insurance
+        </div>
+
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#000000] tracking-tight leading-[1.15]">
+          Protect Your Crops Against <span class="text-[#75013F]">Irrigation Water Shortages</span>
+        </h1>
+
+        <p class="text-gray-600 text-sm sm:text-base leading-relaxed max-w-2xl">
+          IrrigaShield provides simple, transparent crop protection for farmers. When water availability drops below your plan's threshold for the required number of days, your claim is approved and paid automatically &mdash; with no paperwork or delays.
+        </p>
+
+        <!-- Role-Aware CTA Buttons -->
+        <div class="pt-1 flex flex-wrap items-center gap-3.5">
+          @if (isLoggedIn$ | async) {
+            @if (userRole$ | async; as role) {
+              @if (role === 'FARMER') {
+                <a routerLink="/farmer/plans" class="px-6 py-3 bg-[#75013F] text-white rounded-xl text-sm font-semibold hover:bg-[#590130] transition-colors shadow-sm">
+                  Browse Insurance Plans
+                </a>
+                <a routerLink="/farmer/farms" class="px-6 py-3 bg-[#EAE5DF] text-[#75013F] rounded-xl text-sm font-semibold hover:bg-[#ded7cf] transition-colors">
+                  Manage My Farms
+                </a>
+                <a routerLink="/farmer/policies" class="px-5 py-3 bg-[#FAF8F5] border border-[#EAE5DF] text-[#000000] rounded-xl text-sm font-semibold hover:border-[#75013F]/40 transition-colors">
+                  My Policies
+                </a>
+              } @else if (role === 'UNDERWRITER') {
+                <a routerLink="/underwriting" class="px-6 py-3 bg-[#75013F] text-white rounded-xl text-sm font-semibold hover:bg-[#590130] transition-colors shadow-sm">
+                  Open Underwriting Queue
+                </a>
+              } @else if (role === 'DATA_PROVIDER') {
+                <a routerLink="/data-provider" class="px-6 py-3 bg-[#75013F] text-white rounded-xl text-sm font-semibold hover:bg-[#590130] transition-colors shadow-sm">
+                  Submit Water Readings
+                </a>
+              } @else if (role === 'ADMIN') {
+                <a routerLink="/admin/plans" class="px-6 py-3 bg-[#75013F] text-white rounded-xl text-sm font-semibold hover:bg-[#590130] transition-colors shadow-sm">
+                  Manage Plans &amp; Rules
+                </a>
+                <a routerLink="/admin/users" class="px-6 py-3 bg-[#EAE5DF] text-[#75013F] rounded-xl text-sm font-semibold hover:bg-[#ded7cf] transition-colors">
+                  User Management
+                </a>
+              }
+            }
+          } @else {
+            <a routerLink="/login" class="px-6 py-3 bg-[#75013F] text-white rounded-xl text-sm font-semibold hover:bg-[#590130] transition-colors shadow-sm">
+              Sign In to Dashboard
+            </a>
+            <a routerLink="/register" class="px-6 py-3 bg-[#EAE5DF] text-[#75013F] rounded-xl text-sm font-semibold hover:bg-[#ded7cf] transition-colors">
+              Register as Farmer
+            </a>
+          }
+        </div>
+
+        <!-- Quick Highlights Strip -->
+        <div class="pt-6 border-t border-[#EAE5DF] grid grid-cols-3 gap-4">
+          <div>
+            <div class="text-base sm:text-lg font-extrabold text-[#75013F]">Automatic Claims</div>
+            <div class="text-xs text-gray-500 mt-0.5">No manual claim filing</div>
+          </div>
+          <div>
+            <div class="text-base sm:text-lg font-extrabold text-[#000000]">Clear Coverage</div>
+            <div class="text-xs text-gray-500 mt-0.5">Simple plans &amp; rates</div>
+          </div>
+          <div>
+            <div class="text-base sm:text-lg font-extrabold text-[#FE3082]">Fast Payouts</div>
+            <div class="text-xs text-gray-500 mt-0.5">Direct to bank account</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: How Payouts Work Summary Box -->
+      <div class="lg:col-span-5">
+        <div class="bg-[#FAF8F5] border border-[#EAE5DF] rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-[#EAE5DF] pb-3.5">
+            <div>
+              <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Claim Protection Overview</div>
+              <div class="text-sm font-bold text-[#000000] mt-0.5">How Automatic Payouts Work</div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#EAE5DF] text-[#75013F]">
+              3 Simple Checks
+            </span>
+          </div>
+
+          <div class="space-y-3">
+            <div class="p-3.5 bg-white rounded-xl border border-[#EAE5DF] flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs text-gray-500">1. Minimum Water Level</div>
+                <div class="text-sm font-bold text-[#75013F]">Required Water Availability (%)</div>
+              </div>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[#FAF8F5] border border-[#EAE5DF] text-gray-700">Plan Rule</span>
+            </div>
+
+            <div class="p-3.5 bg-white rounded-xl border border-[#EAE5DF] flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs text-gray-500">2. Shortage Duration</div>
+                <div class="text-sm font-bold text-[#000000]">Sustained Water Deficit Days</div>
+              </div>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[#FAF8F5] border border-[#EAE5DF] text-gray-700">Water Report</span>
+            </div>
+
+            <div class="p-3.5 bg-white rounded-xl border border-[#EAE5DF] flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs text-gray-500">3. Claim Settlement</div>
+                <div class="text-sm font-bold text-[#FE3082]">Slab-Based Payout Amount</div>
+              </div>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[#FAF8F5] border border-[#EAE5DF] text-gray-700">Auto-Paid</span>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-[#EAE5DF]/60 border border-[#EAE5DF] flex items-center justify-between text-xs">
+            <span class="font-semibold text-[#75013F]">Multiple Matching Slabs?</span>
+            <span class="text-gray-700 font-medium">Highest farmer payout is selected</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 4-Step End-to-End Workflow -->
+  <section class="space-y-5">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-[#75013F]">Platform Workflow</span>
+        <h2 class="text-2xl font-extrabold text-[#000000] mt-1">How IrrigaShield Works</h2>
+      </div>
+      <p class="text-xs sm:text-sm text-gray-600">
+        Four simple steps from plan setup to automatic claim settlement.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 space-y-3 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div class="w-9 h-9 rounded-xl bg-[#EAE5DF] text-[#75013F] font-extrabold text-sm flex items-center justify-center">01</div>
+          <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#EAE5DF] text-gray-600">Admin</span>
+        </div>
+        <h3 class="font-bold text-base text-[#000000]">Create Plans &amp; Slabs</h3>
+        <p class="text-xs text-gray-600 leading-relaxed">
+          Admins configure crop insurance plans, minimum water thresholds, required shortage days, and payout slabs.
+        </p>
+      </div>
+
+      <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 space-y-3 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div class="w-9 h-9 rounded-xl bg-[#EAE5DF] text-[#75013F] font-extrabold text-sm flex items-center justify-center">02</div>
+          <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#EAE5DF] text-gray-600">Farmer</span>
+        </div>
+        <h3 class="font-bold text-base text-[#000000]">Register Farms &amp; Apply</h3>
+        <p class="text-xs text-gray-600 leading-relaxed">
+          Farmers add their farm details, irrigation setup, and crops, then apply for coverage with instant premium calculation.
+        </p>
+      </div>
+
+      <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 space-y-3 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div class="w-9 h-9 rounded-xl bg-[#EAE5DF] text-[#75013F] font-extrabold text-sm flex items-center justify-center">03</div>
+          <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#EAE5DF] text-gray-600">Underwriter</span>
+        </div>
+        <h3 class="font-bold text-base text-[#000000]">Review &amp; Approve Policy</h3>
+        <p class="text-xs text-gray-600 leading-relaxed">
+          Underwriters review the farm's irrigation profile to approve policies, with the flexibility to update decisions anytime.
+        </p>
+      </div>
+
+      <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 space-y-3 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div class="w-9 h-9 rounded-xl bg-[#75013F] text-white font-extrabold text-sm flex items-center justify-center">04</div>
+          <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#EAE5DF] text-gray-600">Data Provider</span>
+        </div>
+        <h3 class="font-bold text-base text-[#000000]">Water Report &amp; Payout</h3>
+        <p class="text-xs text-gray-600 leading-relaxed">
+          Data Providers record actual water availability for active policies. Water shortages automatically trigger paid claims.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Platform Benefits -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 space-y-2.5 shadow-sm">
+      <div class="text-xs font-bold uppercase tracking-wider text-[#75013F]">Fair Assessment</div>
+      <h3 class="font-bold text-base text-[#000000]">Simple Underwriting</h3>
+      <p class="text-xs text-gray-600 leading-relaxed">
+        Every application connects directly to the farmer's registered land, crop, and irrigation setup for fast, accurate policy approval.
+      </p>
+    </div>
+
+    <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 space-y-2.5 shadow-sm">
+      <div class="text-xs font-bold uppercase tracking-wider text-[#75013F]">Tiered Protection</div>
+      <h3 class="font-bold text-base text-[#000000]">Slab-Based Payouts</h3>
+      <p class="text-xs text-gray-600 leading-relaxed">
+        Plans support multiple water-deficit slabs so higher water shortages receive proportionally higher payouts up to the policy limit.
+      </p>
+    </div>
+
+    <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 space-y-2.5 shadow-sm">
+      <div class="text-xs font-bold uppercase tracking-wider text-[#75013F]">Complete Transparency</div>
+      <h3 class="font-bold text-base text-[#000000]">Track Every Policy &amp; Claim</h3>
+      <p class="text-xs text-gray-600 leading-relaxed">
+        Farmers can view their applications, active policy coverage, water shortage reports, and settled claim payouts in one place.
+      </p>
+    </div>
+  </section>
+
+</div>

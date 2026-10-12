@@ -1,0 +1,23 @@
+# Node & Frontend
+node_modules/
+dist/
+.angular/
+out-tsc/
+
+# Java & Maven
+target/
+*.class
+*.log
+*.jar
+!**/wrapper/*.jar
+
+# Playwright
+playwright-report/
+test-results/
+
+# IDEs & OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+test_dir/

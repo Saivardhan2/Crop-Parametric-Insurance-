@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: farm-service
+
+  r2dbc:
+    url: r2dbc:mysql://localhost:3306/irrigashield_farm_db
+    username: root
+    password: ${DB_PASSWORD:root}
+
+  sql:
+    init:
+      mode: always
+      schema-locations:
+        - classpath:schema.sql
+
+server:
+  port: 8082
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+          - metrics
+
+  endpoint:
+    health:
+      show-details: always
+
+  info:
+    env:
+      enabled: true
+
+info:
+  application:
+    name: IrrigaShield Farm Service
+    description: Reactive farm, crop and irrigation management service
+    version: 1.0.0
+
+logging:
+  level:
+    root: INFO
+    org.example.farmservice: INFO
+
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+

@@ -1,0 +1,54 @@
+<div class="w-[92%] max-w-7xl mx-auto py-8 space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-[#000000]">My Active Policies</h1>
+    <p class="text-xs text-gray-500">Your bound parametric irrigation protection contracts eligible for IoT automatic claims</p>
+  </div>
+
+  @if (myPoliciesList.length > 0 ? myPoliciesList : (policies$ | async); as policies) {
+    @if (policies.length === 0) {
+      <div class="bg-white border border-[#EAE5DF] rounded-2xl p-12 text-center text-gray-400 text-sm">
+        No active policies bound yet. Accepted quotes will appear here.
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        @for (policy of policies; track policy.policyId) {
+          <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 shadow-sm space-y-4 hover:border-[#75013F] transition-colors">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs text-gray-400">Policy Contract</span>
+                <h3 class="font-bold text-lg text-[#000000]">#{{ policy.policyId }}</h3>
+              </div>
+              <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800">
+                {{ policy.policyStatus }}
+              </span>
+            </div>
+
+            <div class="space-y-2 text-xs text-gray-600">
+              <div class="flex justify-between">
+                <span>Total Coverage Amount:</span>
+                <span class="font-bold text-[#75013F]">₹{{ policy.coverageAmount }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Premium Paid:</span>
+                <span class="font-semibold text-gray-800">₹{{ policy.premiumPaid }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Coverage Period:</span>
+                <span class="font-semibold text-gray-800">{{ policy.startDate }} to {{ policy.endDate }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Application Reference:</span>
+                <span class="text-gray-500">App #{{ policy.applicationId }}</span>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-[#EAE5DF] flex items-center justify-between text-xs text-gray-500">
+              <span>Parametric Trigger:</span>
+              <span class="font-semibold text-[#FE3082]">Soil Moisture Telemetry</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

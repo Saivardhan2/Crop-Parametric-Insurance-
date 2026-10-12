@@ -1,0 +1,49 @@
+<div class="w-[92%] max-w-7xl mx-auto py-8 space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-[#000000]">Parametric Claims & Payouts</h1>
+    <p class="text-xs text-gray-500">Automated settlements triggered directly by IoT soil moisture deficits</p>
+  </div>
+
+  @if (claimsList.length > 0 ? claimsList : (claims$ | async); as claims) {
+    @if (claims.length === 0) {
+      <div class="bg-white border border-[#EAE5DF] rounded-2xl p-12 text-center text-gray-400 text-sm">
+        No claims recorded. If soil moisture breaches trigger levels, claims settle automatically.
+      </div>
+    } @else {
+      <div class="space-y-4">
+        @for (claim of claims; track claim.claimId) {
+          <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-2">
+              <div class="flex items-center gap-3">
+                <span class="font-bold text-base text-[#000000]">Claim #{{ claim.claimId }}</span>
+                <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase"
+                  [class]="claim.claimStatus === 'SETTLED' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'">
+                  {{ claim.claimStatus }}
+                </span>
+                <span class="text-xs text-gray-400">Policy #{{ claim.policyId }}</span>
+              </div>
+
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-gray-600">
+                <div>Soil Availability: <span class="font-bold text-[#FE3082]">{{ claim.availabilityPercentage }}%</span></div>
+                <div>Payout Slab: <span class="font-bold text-gray-800">{{ claim.payoutPercentage }}%</span></div>
+                <div>Compensation: <span class="font-bold text-green-700">₹{{ claim.compensationAmount }}</span></div>
+                <div>Payout Status: <span class="font-semibold text-gray-800">{{ claim.payoutStatus }}</span></div>
+              </div>
+
+              @if (claim.recordedAt) {
+                <div class="text-[11px] text-gray-400">
+                  Telemetry Event Timestamp: {{ claim.recordedAt }}
+                </div>
+              }
+            </div>
+
+            <div class="text-right">
+              <div class="text-xs text-gray-400">Settled Amount</div>
+              <div class="text-2xl font-extrabold text-[#75013F]">₹{{ claim.compensationAmount }}</div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,67 @@
+<div class="w-[92%] max-w-7xl mx-auto py-8 space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-[#000000]">My Policy Applications</h1>
+    <p class="text-xs text-gray-500">Track underwriting review and accept approved parametric insurance quotes</p>
+  </div>
+
+  @if (myAppsList.length > 0 ? myAppsList : (applications$ | async); as apps) {
+    @if (apps.length === 0) {
+      <div class="bg-white border border-[#EAE5DF] rounded-2xl p-12 text-center text-gray-400 text-sm">
+        No applications submitted yet. Browse active plans to apply.
+      </div>
+    } @else {
+      <div class="space-y-4">
+        @for (app of apps; track app.applicationId) {
+          <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-2">
+              <div class="flex items-center gap-3">
+                <span class="font-bold text-base text-[#000000]">Application #{{ app.applicationId }}</span>
+                <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase"
+                  [class]="app.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                           app.status === 'POLICY_ACTIVE' ? 'bg-emerald-100 text-emerald-800' :
+                           app.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                           app.status === 'IN_REVIEW' ? 'bg-amber-100 text-amber-800' :
+                           'bg-blue-100 text-blue-800'">
+                  {{ app.status }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-xs text-gray-600">
+                <div>Plan ID: <span class="font-semibold text-gray-800">#{{ app.planId }}</span></div>
+                <div>Farm ID: <span class="font-semibold text-gray-800">#{{ app.farmId }}</span></div>
+                <div>Crop ID: <span class="font-semibold text-gray-800">#{{ app.cropId }}</span></div>
+                <div>Requested Coverage: <span class="font-semibold text-[#75013F]">₹{{ app.requestedCoverageAmount }}</span></div>
+                @if (app.approvedCoverageAmount) {
+                  <div>Approved Coverage: <span class="font-bold text-green-700">₹{{ app.approvedCoverageAmount }}</span></div>
+                }
+                @if (app.quotedPremiumAmount) {
+                  <div>Quoted Premium: <span class="font-bold text-[#75013F]">₹{{ app.quotedPremiumAmount }}</span></div>
+                }
+              </div>
+
+              @if (app.remarks) {
+                <div class="text-xs bg-gray-50 border border-[#EAE5DF] p-2.5 rounded-xl text-gray-600">
+                  <span class="font-semibold">Underwriter Remarks:</span> {{ app.remarks }}
+                </div>
+              }
+            </div>
+
+            <div class="flex items-center gap-2">
+              @if (app.status === 'APPROVED') {
+                <button (click)="onAcceptQuote(app.applicationId)"
+                  class="px-5 py-2.5 bg-green-700 hover:bg-green-800 text-white rounded-xl text-xs font-semibold transition-colors shadow-sm cursor-pointer whitespace-nowrap">
+                  Accept & Buy Policy
+                </button>
+              } @else if (app.status === 'DRAFT') {
+                <button (click)="onSubmitApplication(app.applicationId)"
+                  class="px-5 py-2.5 bg-[#75013F] hover:bg-[#590130] text-white rounded-xl text-xs font-semibold transition-colors shadow-sm cursor-pointer whitespace-nowrap">
+                  Submit for Underwriting
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

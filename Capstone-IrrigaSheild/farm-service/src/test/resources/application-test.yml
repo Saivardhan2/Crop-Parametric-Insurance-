@@ -1,0 +1,21 @@
+spring:
+  r2dbc:
+    url: r2dbc:mysql://localhost:3306/irrigashield_farm_test_db
+    username: root
+    password:
+
+  sql:
+    init:
+      mode: always
+      schema-locations:
+        - classpath:schema-test.sql
+
+  cloud:
+    discovery:
+      enabled: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false

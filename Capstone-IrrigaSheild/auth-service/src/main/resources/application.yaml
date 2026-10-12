@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: auth-service
+
+  r2dbc:
+    url: r2dbc:mysql://localhost:3306/irrigashield_auth_db
+    username: root
+    password: ${DB_PASSWORD:root}
+
+  sql:
+    init:
+      mode: always
+      schema-locations:
+        - classpath:schema.sql
+
+  jackson:
+    default-property-inclusion: non_null
+application:
+  admin:
+    name: IrrigaShield Admin
+    email: admin@irrigashield.com
+    password: Admin12345
+server:
+  port: 8081
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+security:
+  jwt:
+    secret: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+    expiration-ms: 3600000
+  cookie:
+    secure: false
+
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+          - metrics
+
+  endpoint:
+    health:
+      show-details: always
+
+  info:
+    env:
+      enabled: true
+
+info:
+  application:
+    name: IrrigaShield Auth Service
+    description: Reactive authentication and user management service
+    version: 1.0.0
+
+logging:
+  level:
+    root: INFO
+    org.example.authservice: INFO
+
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
