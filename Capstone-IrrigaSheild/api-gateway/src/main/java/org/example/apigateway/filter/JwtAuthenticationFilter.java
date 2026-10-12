@@ -43,6 +43,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             ServerWebExchange exchange,
             GatewayFilterChain chain) {
 
+        String reqOrigin = exchange.getRequest().getHeaders().getOrigin();
+        if (reqOrigin != null && !reqOrigin.isBlank()) {
+            exchange.getResponse().beforeCommit(() -> {
+                var respHeaders = exchange.getResponse().getHeaders();
+                if (!respHeaders.containsKey("Access-Control-Allow-Origin")) {
+                    respHeaders.add("Access-Control-Allow-Origin", reqOrigin);
+                    respHeaders.add("Access-Control-Allow-Credentials", "true");
+                    respHeaders.add("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+                    respHeaders.add("Access-Control-Allow-Headers", "*");
+                }
+                return Mono.empty();
+            });
+        }
+
         ServerHttpRequest sanitizedRequest =
                 removeIncomingIdentityHeaders(exchange.getRequest());
 
