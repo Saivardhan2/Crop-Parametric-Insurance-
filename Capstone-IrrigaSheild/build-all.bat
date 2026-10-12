@@ -1,20 +1,27 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-REM Detect JAVA_HOME if not already set or invalid in environment
+REM Detect a valid JDK (with bin\javac.exe) if JAVA_HOME is not set or invalid
 if defined JAVA_HOME (
-    if not exist "%JAVA_HOME%\bin\java.exe" set "JAVA_HOME="
+    if not exist "%JAVA_HOME%\bin\javac.exe" set "JAVA_HOME="
 )
 if not defined JAVA_HOME (
-    for /f "delims=" %%I in ('where java 2^>nul') do (
+    for /f "delims=" %%I in ('where javac 2^>nul') do (
         if not defined JAVA_HOME (
-            for %%D in ("%%~dpI..") do set "JAVA_HOME=%%~fD"
+            for %%D in ("%%~dpI..") do (
+                if exist "%%~fD\bin\javac.exe" set "JAVA_HOME=%%~fD"
+            )
         )
     )
 )
 if not defined JAVA_HOME (
-    for /d %%D in ("C:\Program Files\JetBrains\IntelliJ*\jbr" "C:\Program Files\Java\jdk*" "C:\Program Files\Eclipse Adoptium\jdk*" "C:\Program Files\Microsoft\jdk*") do (
-        if exist "%%~fD\bin\java.exe" set "JAVA_HOME=%%~fD"
+    for /d %%D in ("%USERPROFILE%\.jdks\*" "C:\Program Files\Java\*" "C:\Program Files\Eclipse Adoptium\*" "C:\Program Files\Microsoft\*") do (
+        if exist "%%~fD\bin\javac.exe" set "JAVA_HOME=%%~fD"
+    )
+)
+if not defined JAVA_HOME (
+    for /d %%D in ("C:\Program Files\JetBrains\*" "%LOCALAPPDATA%\Programs\*") do (
+        if exist "%%~fD\jbr\bin\javac.exe" set "JAVA_HOME=%%~fD\jbr"
     )
 )
 if defined JAVA_HOME (
@@ -40,6 +47,8 @@ echo =======================================================
 echo   Packaging all IrrigaShield microservices in parallel
 echo =======================================================
 echo.
+call "%~dp0stop-all.bat"
+
 
 set "SERVICES=eureka-server api-gateway auth-service farm-service policy-service event-claims-service"
 set "LOG_DIR=%~dp0build-logs"
@@ -113,7 +122,6 @@ if "!FAILED!"=="1" (
     echo Detailed failure logs preserved in:
     echo %LOG_DIR%\
     echo.
-    pause
     exit /b 1
 )
 
@@ -129,7 +137,6 @@ echo Fresh JAR files are ready in each service's target/ folder.
 echo You can now launch them using start-all.bat.
 echo.
 
-pause
 exit /b 0
 
 
@@ -137,20 +144,27 @@ exit /b 0
 
 set "SERVICE=%~2"
 
-REM Detect JAVA_HOME if not already set or invalid in environment
+REM Detect a valid JDK (with bin\javac.exe) if JAVA_HOME is not set or invalid
 if defined JAVA_HOME (
-    if not exist "%JAVA_HOME%\bin\java.exe" set "JAVA_HOME="
+    if not exist "%JAVA_HOME%\bin\javac.exe" set "JAVA_HOME="
 )
 if not defined JAVA_HOME (
-    for /f "delims=" %%I in ('where java 2^>nul') do (
+    for /f "delims=" %%I in ('where javac 2^>nul') do (
         if not defined JAVA_HOME (
-            for %%D in ("%%~dpI..") do set "JAVA_HOME=%%~fD"
+            for %%D in ("%%~dpI..") do (
+                if exist "%%~fD\bin\javac.exe" set "JAVA_HOME=%%~fD"
+            )
         )
     )
 )
 if not defined JAVA_HOME (
-    for /d %%D in ("C:\Program Files\JetBrains\IntelliJ*\jbr" "C:\Program Files\Java\jdk*" "C:\Program Files\Eclipse Adoptium\jdk*" "C:\Program Files\Microsoft\jdk*") do (
-        if exist "%%~fD\bin\java.exe" set "JAVA_HOME=%%~fD"
+    for /d %%D in ("%USERPROFILE%\.jdks\*" "C:\Program Files\Java\*" "C:\Program Files\Eclipse Adoptium\*" "C:\Program Files\Microsoft\*") do (
+        if exist "%%~fD\bin\javac.exe" set "JAVA_HOME=%%~fD"
+    )
+)
+if not defined JAVA_HOME (
+    for /d %%D in ("C:\Program Files\JetBrains\*" "%LOCALAPPDATA%\Programs\*") do (
+        if exist "%%~fD\jbr\bin\javac.exe" set "JAVA_HOME=%%~fD\jbr"
     )
 )
 if defined JAVA_HOME (

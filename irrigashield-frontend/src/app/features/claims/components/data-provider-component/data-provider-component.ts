@@ -2,7 +2,6 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
-import { forkJoin } from 'rxjs';
 import { submitReading } from '../../state/claims.actions';
 import { latestSubmittedClaimSelector, claimsStatusSelector } from '../../state/claims.selector';
 import { ClaimsService } from '../../services/claims-service';
@@ -40,10 +39,7 @@ export class DataProviderComponent implements OnInit {
   }
 
   loadActivePolicies(): void {
-    const checks = Array.from({ length: 10 }, (_, idx) =>
-      this.claimsService.getPolicyClaimConfiguration(idx + 1)
-    );
-    forkJoin(checks).subscribe({
+    this.claimsService.getActivePolicyConfigurations().subscribe({
       next: (results) => {
         this.activePolicies = (results || []).filter(r => r !== null);
         const policyControl = this.readingForm.get('policyId');

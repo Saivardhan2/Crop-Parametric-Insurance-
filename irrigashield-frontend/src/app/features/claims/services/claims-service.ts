@@ -19,6 +19,12 @@ export class ClaimsService {
     return this.http.get<ClaimResponseDTO[]>(this.baseUrl + '/claims/my-claims');
   }
 
+  getActivePolicyConfigurations(): Observable<any[]> {
+    return this.http.get<any[]>(this.baseUrl + '/internal/policies/active-configurations').pipe(
+      catchError(() => of([]))
+    );
+  }
+
   getPolicyClaimConfiguration(policyId: number): Observable<any | null> {
     return this.http.get<any>(this.baseUrl + '/internal/policies/' + policyId + '/claim-configuration').pipe(
       catchError(() => of(null))

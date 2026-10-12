@@ -17,6 +17,8 @@ public interface PolicyRepository
     Flux<Policy> findAllByFarmerUserIdOrderByCreatedAtDesc(
             Long farmerUserId
     );
+    Flux<Policy> findAllByStatusOrderByCreatedAtDesc(String status);
+
     Mono<Policy> findByPolicyIdAndStatus(
             Long policyId,
             String status

@@ -1,20 +1,27 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-REM Detect JAVA_HOME if not already set or invalid in environment
+REM Detect a valid JDK if JAVA_HOME is not set or invalid in environment
 if defined JAVA_HOME (
     if not exist "%JAVA_HOME%\bin\java.exe" set "JAVA_HOME="
 )
 if not defined JAVA_HOME (
-    for /f "delims=" %%I in ('where java 2^>nul') do (
+    for /f "delims=" %%I in ('where javac 2^>nul') do (
         if not defined JAVA_HOME (
-            for %%D in ("%%~dpI..") do set "JAVA_HOME=%%~fD"
+            for %%D in ("%%~dpI..") do (
+                if exist "%%~fD\bin\java.exe" set "JAVA_HOME=%%~fD"
+            )
         )
     )
 )
 if not defined JAVA_HOME (
-    for /d %%D in ("C:\Program Files\JetBrains\IntelliJ*\jbr" "C:\Program Files\Java\jdk*" "C:\Program Files\Eclipse Adoptium\jdk*" "C:\Program Files\Microsoft\jdk*") do (
+    for /d %%D in ("%USERPROFILE%\.jdks\*" "C:\Program Files\Java\*" "C:\Program Files\Eclipse Adoptium\*" "C:\Program Files\Microsoft\*") do (
         if exist "%%~fD\bin\java.exe" set "JAVA_HOME=%%~fD"
+    )
+)
+if not defined JAVA_HOME (
+    for /d %%D in ("C:\Program Files\JetBrains\*" "%LOCALAPPDATA%\Programs\*") do (
+        if exist "%%~fD\jbr\bin\java.exe" set "JAVA_HOME=%%~fD\jbr"
     )
 )
 if defined JAVA_HOME (
@@ -39,10 +46,10 @@ echo.
 for %%S in (%SERVICES%) do (
     echo Starting %%S...
     start "Runtime - %%S" /b "%ComSpec%" /c call "%~f0" __start %%S
-    REM Give Eureka server a small head start to bind port 8761 before clients register
+    REM Give Eureka server a head start to bind port 8761 before clients register
     if "%%S"=="eureka-server" (
-        timeout /t 5 /nobreak >nul 2>&1
-        if errorlevel 1 ping 127.0.0.1 -n 4 >nul
+        timeout /t 8 /nobreak >nul 2>&1
+        if errorlevel 1 ping 127.0.0.1 -n 8 >nul
     )
 )
 
@@ -63,7 +70,6 @@ echo Runtime logs:
 echo %LOG_DIR%\
 echo.
 
-REM pause
 exit /b 0
 
 
@@ -72,14 +78,8 @@ exit /b 0
 set "SERVICE=%~2"
 set "JAR="
 
-REM Detect Java executable
 set "JAVA_CMD=java"
-if not defined JAVA_HOME (
-    if exist "C:\Program Files\JetBrains\IntelliJ IDEA 2026.2.3\jbr\bin\java.exe" (
-        set "JAVA_HOME=C:\Program Files\JetBrains\IntelliJ IDEA 2026.2.3\jbr"
-        set "JAVA_CMD=!JAVA_HOME!\bin\java.exe"
-    )
-) else (
+if defined JAVA_HOME (
     if exist "%JAVA_HOME%\bin\java.exe" (
         set "JAVA_CMD=%JAVA_HOME%\bin\java.exe"
     )
@@ -114,4 +114,3 @@ echo [%SERVICE%] Starting...
 
 popd
 exit /b 0
-

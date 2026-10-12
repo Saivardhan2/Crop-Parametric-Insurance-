@@ -6,6 +6,7 @@ import org.example.policyservice.dto.response.PayoutSlabConfigResponse;
 import org.example.policyservice.dto.response.PolicyClaimConfigurationResponse;
 import org.example.policyservice.dto.response.PolicyInternalResponse;
 import org.example.policyservice.dto.response.TriggerRuleConfigResponse;
+import org.example.policyservice.entity.Policy;
 import org.example.policyservice.exception.ApiException;
 import org.example.policyservice.repository.PayoutSlabRepository;
 import org.example.policyservice.repository.PolicyRepository;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -42,6 +44,14 @@ public class InternalPolicyController {
         this.policyRepository = policyRepository;
         this.triggerRuleRepository = triggerRuleRepository;
         this.payoutSlabRepository = payoutSlabRepository;
+    }
+
+    @GetMapping("/active-configurations")
+    public Flux<PolicyClaimConfigurationResponse> getAllActivePolicyClaimConfigurations() {
+        log.info("Fetching all active policy claim configurations");
+        return policyRepository
+                .findAllByStatusOrderByCreatedAtDesc("ACTIVE")
+                .flatMap(this::buildPolicyClaimConfiguration);
     }
 
     @GetMapping("/{policyId}")
@@ -99,74 +109,76 @@ public class InternalPolicyController {
                                 )
                         )
                 )
-                .flatMap(policy ->
-                        triggerRuleRepository
-                                .findAllByPlanIdAndStatusOrderByCreatedAtDesc(
-                                        policy.getPlanId(),
+                .flatMap(this::buildPolicyClaimConfiguration);
+    }
+
+    private Mono<PolicyClaimConfigurationResponse> buildPolicyClaimConfiguration(Policy policy) {
+        return triggerRuleRepository
+                .findAllByPlanIdAndStatusOrderByCreatedAtDesc(
+                        policy.getPlanId(),
+                        "ACTIVE"
+                )
+                .next()
+                .flatMap(rule ->
+                        payoutSlabRepository
+                                .findAllByTriggerRuleIdAndStatus(
+                                        rule.getTriggerRuleId(),
                                         "ACTIVE"
                                 )
-                                .next()
-                                .flatMap(rule ->
-                                        payoutSlabRepository
-                                                .findAllByTriggerRuleIdAndStatus(
-                                                        rule.getTriggerRuleId(),
-                                                        "ACTIVE"
-                                                )
-                                                .map(slab -> new PayoutSlabConfigResponse(
-                                                        slab.getPayoutSlabId(),
-                                                        slab.getTriggerRuleId(),
-                                                        slab.getMinimumDurationHours(),
-                                                        slab.getMaximumDurationHours(),
-                                                        slab.getMinAvailabilityPct(),
-                                                        slab.getMaxAvailabilityPct(),
-                                                        slab.getPayoutPercentage(),
-                                                        slab.getStatus()
-                                                ))
-                                                .collectList()
-                                                .map(slabs -> {
-                                                    TriggerRuleConfigResponse ruleConfig =
-                                                            new TriggerRuleConfigResponse(
-                                                                    rule.getTriggerRuleId(),
-                                                                    rule.getPlanId(),
-                                                                    rule.getCropType(),
-                                                                    rule.getGrowthStage(),
-                                                                    rule.getAvailabilityThresholdPercentage(),
-                                                                    rule.getMinimumContinuousHours(),
-                                                                    rule.getRollingWindowDays(),
-                                                                    rule.getRequiredShortageDays(),
-                                                                    rule.getStatus()
-                                                            );
+                                .map(slab -> new PayoutSlabConfigResponse(
+                                        slab.getPayoutSlabId(),
+                                        slab.getTriggerRuleId(),
+                                        slab.getMinimumDurationHours(),
+                                        slab.getMaximumDurationHours(),
+                                        slab.getMinAvailabilityPct(),
+                                        slab.getMaxAvailabilityPct(),
+                                        slab.getPayoutPercentage(),
+                                        slab.getStatus()
+                                ))
+                                .collectList()
+                                .map(slabs -> {
+                                    TriggerRuleConfigResponse ruleConfig =
+                                            new TriggerRuleConfigResponse(
+                                                    rule.getTriggerRuleId(),
+                                                    rule.getPlanId(),
+                                                    rule.getCropType(),
+                                                    rule.getGrowthStage(),
+                                                    rule.getAvailabilityThresholdPercentage(),
+                                                    rule.getMinimumContinuousHours(),
+                                                    rule.getRollingWindowDays(),
+                                                    rule.getRequiredShortageDays(),
+                                                    rule.getStatus()
+                                            );
 
-                                                    return new PolicyClaimConfigurationResponse(
-                                                            policy.getPolicyId(),
-                                                            policy.getFarmerUserId(),
-                                                            policy.getFarmId(),
-                                                            policy.getCropId(),
-                                                            policy.getPlanId(),
-                                                            policy.getCoverageAmount(),
-                                                            policy.getStartDate(),
-                                                            policy.getEndDate(),
-                                                            policy.getStatus(),
-                                                            ruleConfig,
-                                                            slabs
-                                                    );
-                                                })
-                                )
-                                .defaultIfEmpty(
-                                        new PolicyClaimConfigurationResponse(
-                                                policy.getPolicyId(),
-                                                policy.getFarmerUserId(),
-                                                policy.getFarmId(),
-                                                policy.getCropId(),
-                                                policy.getPlanId(),
-                                                policy.getCoverageAmount(),
-                                                policy.getStartDate(),
-                                                policy.getEndDate(),
-                                                policy.getStatus(),
-                                                null,
-                                                List.of()
-                                        )
-                                )
+                                    return new PolicyClaimConfigurationResponse(
+                                            policy.getPolicyId(),
+                                            policy.getFarmerUserId(),
+                                            policy.getFarmId(),
+                                            policy.getCropId(),
+                                            policy.getPlanId(),
+                                            policy.getCoverageAmount(),
+                                            policy.getStartDate(),
+                                            policy.getEndDate(),
+                                            policy.getStatus(),
+                                            ruleConfig,
+                                            slabs
+                                    );
+                                })
+                )
+                .defaultIfEmpty(
+                        new PolicyClaimConfigurationResponse(
+                                policy.getPolicyId(),
+                                policy.getFarmerUserId(),
+                                policy.getFarmId(),
+                                policy.getCropId(),
+                                policy.getPlanId(),
+                                policy.getCoverageAmount(),
+                                policy.getStartDate(),
+                                policy.getEndDate(),
+                                policy.getStatus(),
+                                null,
+                                List.of()
+                        )
                 );
     }
 }
