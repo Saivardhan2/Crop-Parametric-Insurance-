@@ -3,10 +3,10 @@ import { CanActivateFn, Router, ActivatedRouteSnapshot } from '@angular/router';
 
 export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const router = inject(Router);
-  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('currentUser');
   const role = localStorage.getItem('role');
 
-  if (!token) {
+  if (!user) {
     router.navigate(['/login']);
     return false;
   }

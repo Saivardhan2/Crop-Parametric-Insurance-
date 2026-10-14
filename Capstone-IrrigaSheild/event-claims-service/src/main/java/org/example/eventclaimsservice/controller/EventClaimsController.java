@@ -2,6 +2,8 @@ package org.example.eventclaimsservice.controller;
 
 import jakarta.validation.Valid;
 
+import org.example.eventclaimsservice.dto.ClaimDecisionRequest;
+import org.example.eventclaimsservice.dto.ClaimFeedbackRequest;
 import org.example.eventclaimsservice.dto.ClaimResponse;
 import org.example.eventclaimsservice.dto.IrrigationReadingRequest;
 import org.example.eventclaimsservice.security.AuthenticatedUser;
@@ -55,5 +57,58 @@ public class EventClaimsController {
                 (AuthenticatedUser) authentication.getPrincipal();
 
         return eventClaimsService.getMyClaims(user);
+    }
+
+    @GetMapping("/claims/all")
+    @PreAuthorize("hasAnyRole('CLAIMS_OFFICER', 'ADMIN')")
+    public Flux<ClaimResponse> getAllClaims(
+            Authentication authentication) {
+
+        AuthenticatedUser user =
+                (AuthenticatedUser) authentication.getPrincipal();
+
+        return eventClaimsService.getAllClaims(user);
+    }
+
+    @PutMapping("/claims/{claimId}/approve")
+    @PreAuthorize("hasAnyRole('CLAIMS_OFFICER', 'ADMIN')")
+    public Mono<ResponseEntity<ClaimResponse>> approveClaim(
+            Authentication authentication,
+            @PathVariable Long claimId,
+            @RequestBody(required = false) ClaimDecisionRequest request) {
+
+        AuthenticatedUser user =
+                (AuthenticatedUser) authentication.getPrincipal();
+
+        return eventClaimsService.approveClaim(user, claimId, request)
+                .map(ResponseEntity::ok);
+    }
+
+    @PutMapping("/claims/{claimId}/reject")
+    @PreAuthorize("hasAnyRole('CLAIMS_OFFICER', 'ADMIN')")
+    public Mono<ResponseEntity<ClaimResponse>> rejectClaim(
+            Authentication authentication,
+            @PathVariable Long claimId,
+            @RequestBody(required = false) ClaimDecisionRequest request) {
+
+        AuthenticatedUser user =
+                (AuthenticatedUser) authentication.getPrincipal();
+
+        return eventClaimsService.rejectClaim(user, claimId, request)
+                .map(ResponseEntity::ok);
+    }
+
+    @PostMapping("/claims/{claimId}/feedback")
+    @PreAuthorize("hasRole('FARMER')")
+    public Mono<ResponseEntity<ClaimResponse>> submitFeedback(
+            Authentication authentication,
+            @PathVariable Long claimId,
+            @Valid @RequestBody ClaimFeedbackRequest request) {
+
+        AuthenticatedUser user =
+                (AuthenticatedUser) authentication.getPrincipal();
+
+        return eventClaimsService.submitFeedback(user, claimId, request)
+                .map(ResponseEntity::ok);
     }
 }

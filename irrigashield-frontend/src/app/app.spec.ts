@@ -25,8 +25,8 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should dispatch loadUser on init when token exists in localStorage', () => {
-    localStorage.setItem('token', 'mock-jwt-token');
+  it('should dispatch loadUser on init when currentUser exists in localStorage', () => {
+    localStorage.setItem('currentUser', JSON.stringify({ userId: 1, name: 'Farmer' }));
     const store = TestBed.inject(Store);
     const dispatchSpy = vi.spyOn(store, 'dispatch');
 

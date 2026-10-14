@@ -1,15 +1,16 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { AsyncPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { loadMyClaims } from '../../state/claims.actions';
 import { myClaimsSelector } from '../../state/claims.selector';
 import { ClaimsService } from '../../services/claims-service';
-import { ClaimResponseDTO } from '../../models/ClaimResponseDTO';
+import { ClaimResponseDTO, ClaimFeedbackReqDTO } from '../../models/ClaimResponseDTO';
 
 @Component({
   selector: 'app-claims-view',
   standalone: true,
-  imports: [AsyncPipe],
+  imports: [CommonModule, FormsModule],
   templateUrl: './claims-view-component.html',
   styleUrl: './claims-view-component.css'
 })
@@ -20,21 +21,143 @@ export class ClaimsViewComponent implements OnInit {
 
   claims$ = this.store.select(myClaimsSelector);
   claimsList: ClaimResponseDTO[] = [];
+  userRole: string = localStorage.getItem('role') || 'FARMER';
+  activeFilter: 'ALL' | 'PENDING' | 'SETTLED' | 'REJECTED' = 'ALL';
+
+  officerRemarks: { [key: number]: string } = {};
+  activeFeedbackForms: { [key: number]: ClaimFeedbackReqDTO } = {};
+  actionLoading: { [key: number]: boolean } = {};
+  actionMessage: { [key: number]: { type: 'success' | 'error'; text: string } } = {};
 
   ngOnInit(): void {
+    this.userRole = localStorage.getItem('role') || 'FARMER';
     this.refreshClaims();
   }
 
+  isOfficer(): boolean {
+    return this.userRole === 'CLAIMS_OFFICER' || this.userRole === 'ADMIN';
+  }
+
   refreshClaims(): void {
-    this.store.dispatch(loadMyClaims());
-    this.claimsService.getMyClaims().subscribe({
-      next: (list) => {
-        this.claimsList = list || [];
+    if (this.isOfficer()) {
+      this.claimsService.getAllClaims().subscribe({
+        next: (list) => {
+          this.claimsList = list || [];
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.store.dispatch(loadMyClaims());
+      this.claimsService.getMyClaims().subscribe({
+        next: (list) => {
+          this.claimsList = list || [];
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  }
+
+  get filteredClaims(): ClaimResponseDTO[] {
+    if (this.activeFilter === 'ALL') return this.claimsList;
+    if (this.activeFilter === 'PENDING') {
+      return this.claimsList.filter(c => c.claimStatus === 'PENDING_APPROVAL');
+    }
+    if (this.activeFilter === 'SETTLED') {
+      return this.claimsList.filter(c => c.claimStatus === 'SETTLED');
+    }
+    if (this.activeFilter === 'REJECTED') {
+      return this.claimsList.filter(c => c.claimStatus === 'REJECTED');
+    }
+    return this.claimsList;
+  }
+
+  get pendingCount(): number {
+    return this.claimsList.filter(c => c.claimStatus === 'PENDING_APPROVAL').length;
+  }
+
+  onApprove(claimId: number): void {
+    const remarks = this.officerRemarks[claimId] || '';
+    this.actionLoading[claimId] = true;
+    this.claimsService.approveClaim(claimId, remarks).subscribe({
+      next: (updated) => {
+        this.actionLoading[claimId] = false;
+        this.actionMessage[claimId] = { type: 'success', text: 'Claim approved and settled successfully!' };
+        this.updateClaimInList(updated);
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
+        this.actionLoading[claimId] = false;
+        this.actionMessage[claimId] = { type: 'error', text: err.error?.message || 'Failed to approve claim.' };
         this.cdr.detectChanges();
       }
     });
+  }
+
+  onReject(claimId: number): void {
+    const remarks = this.officerRemarks[claimId] || '';
+    this.actionLoading[claimId] = true;
+    this.claimsService.rejectClaim(claimId, remarks).subscribe({
+      next: (updated) => {
+        this.actionLoading[claimId] = false;
+        this.actionMessage[claimId] = { type: 'success', text: 'Claim rejected.' };
+        this.updateClaimInList(updated);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.actionLoading[claimId] = false;
+        this.actionMessage[claimId] = { type: 'error', text: err.error?.message || 'Failed to reject claim.' };
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  openFeedbackForm(claimId: number): void {
+    this.activeFeedbackForms[claimId] = {
+      feedbackStatus: 'SATISFIED',
+      feedbackRating: 5,
+      feedbackComments: '',
+      requestedAdditionalAmount: 0
+    };
+    this.cdr.detectChanges();
+  }
+
+  cancelFeedbackForm(claimId: number): void {
+    delete this.activeFeedbackForms[claimId];
+    this.cdr.detectChanges();
+  }
+
+  onSubmitFeedback(claimId: number): void {
+    const form = this.activeFeedbackForms[claimId];
+    if (!form) return;
+    this.actionLoading[claimId] = true;
+    this.claimsService.submitClaimFeedback(claimId, form).subscribe({
+      next: (updated) => {
+        this.actionLoading[claimId] = false;
+        delete this.activeFeedbackForms[claimId];
+        this.actionMessage[claimId] = { type: 'success', text: 'Thank you! Your feedback has been recorded.' };
+        this.updateClaimInList(updated);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.actionLoading[claimId] = false;
+        this.actionMessage[claimId] = { type: 'error', text: err.error?.message || 'Failed to submit feedback.' };
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private updateClaimInList(updated: ClaimResponseDTO): void {
+    const idx = this.claimsList.findIndex(c => c.claimId === updated.claimId);
+    if (idx !== -1) {
+      this.claimsList[idx] = updated;
+    } else {
+      this.claimsList.unshift(updated);
+    }
   }
 }

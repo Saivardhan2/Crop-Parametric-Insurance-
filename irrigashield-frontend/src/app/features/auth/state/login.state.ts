@@ -11,8 +11,8 @@ export interface LoginState {
   signupStatus: Status;
 }
 export const InitialLoginState: LoginState = {
-  isLoggedIn: !!localStorage.getItem('token'),
-  token: localStorage.getItem('token'),
+  isLoggedIn: !!localStorage.getItem('currentUser'),
+  token: null,
   role: localStorage.getItem('role'),
   loginStatus: { loading: false, success: false, error: '' },
   signupStatus: { loading: false, success: false, error: '' }

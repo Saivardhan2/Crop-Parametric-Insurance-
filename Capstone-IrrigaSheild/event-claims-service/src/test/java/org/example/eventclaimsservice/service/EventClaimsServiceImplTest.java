@@ -13,9 +13,12 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 import org.example.eventclaimsservice.client.PolicyServiceClient;
+import org.example.eventclaimsservice.dto.ClaimDecisionRequest;
+import org.example.eventclaimsservice.dto.ClaimFeedbackRequest;
 import org.example.eventclaimsservice.dto.IrrigationReadingRequest;
 import org.example.eventclaimsservice.dto.PolicyClaimConfigurationResponse;
 import org.example.eventclaimsservice.entity.Claim;
@@ -50,6 +53,8 @@ class EventClaimsServiceImplTest {
 
     private EventClaimsServiceImpl service;
     private AuthenticatedUser dataProvider;
+    private AuthenticatedUser claimsOfficer;
+    private AuthenticatedUser farmer;
     private PolicyClaimConfigurationResponse activePolicyConfig;
 
     @BeforeEach
@@ -64,6 +69,16 @@ class EventClaimsServiceImplTest {
         dataProvider = new AuthenticatedUser(
                 5L,
                 "provider@irrigashield.com"
+        );
+
+        claimsOfficer = new AuthenticatedUser(
+                8L,
+                "officer@irrigashield.com"
+        );
+
+        farmer = new AuthenticatedUser(
+                2L,
+                "farmer@irrigashield.com"
         );
 
         activePolicyConfig = new PolicyClaimConfigurationResponse(
@@ -116,7 +131,7 @@ class EventClaimsServiceImplTest {
     }
 
     @Test
-    void lowReadingShouldCreateSettledClaim() {
+    void lowReadingShouldCreatePendingApprovalClaim() {
 
         IrrigationReadingRequest request =
                 createRequest("40.00");
@@ -124,10 +139,10 @@ class EventClaimsServiceImplTest {
         mockActivePolicy();
         mockReadingSave(2L);
 
-        when(claimRepository.existsByPolicyIdAndEventDateAndStatus(
+        when(claimRepository.existsByPolicyIdAndEventDateAndStatusIn(
                 eq(1L),
                 any(LocalDate.class),
-                eq("SETTLED")
+                any()
         )).thenReturn(Mono.just(false));
 
         when(claimRepository.findAllByPolicyIdAndStatus(1L, "SETTLED"))
@@ -156,12 +171,12 @@ class EventClaimsServiceImplTest {
                     );
 
                     assertEquals(
-                            "SUCCESS",
+                            "PENDING",
                             response.payoutStatus()
                     );
 
                     assertEquals(
-                            "SETTLED",
+                            "PENDING_APPROVAL",
                             response.claimStatus()
                     );
                 })
@@ -169,6 +184,98 @@ class EventClaimsServiceImplTest {
 
         verify(claimRepository)
                 .save(any(Claim.class));
+    }
+
+    @Test
+    void claimsOfficerCanApprovePendingClaim() {
+        Claim pendingClaim = Claim.builder()
+                .claimId(10L)
+                .policyId(1L)
+                .farmerUserId(2L)
+                .status("PENDING_APPROVAL")
+                .payoutStatus("PENDING")
+                .compensationAmount(new BigDecimal("15000.00"))
+                .payoutPercentage(new BigDecimal("25.00"))
+                .availabilityPercentage(new BigDecimal("40.00"))
+                .build();
+
+        when(claimRepository.findById(10L)).thenReturn(Mono.just(pendingClaim));
+        when(claimRepository.save(any(Claim.class))).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
+
+        ClaimDecisionRequest req = new ClaimDecisionRequest("Approved by senior officer");
+
+        StepVerifier.create(service.approveClaim(claimsOfficer, 10L, req))
+                .assertNext(response -> {
+                    assertEquals(10L, response.claimId());
+                    assertEquals("SETTLED", response.claimStatus());
+                    assertEquals("SUCCESS", response.payoutStatus());
+                    assertEquals(8L, response.claimsOfficerId());
+                    assertEquals("Approved by senior officer", response.claimsOfficerRemarks());
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void claimsOfficerCanRejectPendingClaim() {
+        Claim pendingClaim = Claim.builder()
+                .claimId(11L)
+                .policyId(1L)
+                .farmerUserId(2L)
+                .status("PENDING_APPROVAL")
+                .payoutStatus("PENDING")
+                .compensationAmount(new BigDecimal("15000.00"))
+                .payoutPercentage(new BigDecimal("25.00"))
+                .availabilityPercentage(new BigDecimal("40.00"))
+                .build();
+
+        when(claimRepository.findById(11L)).thenReturn(Mono.just(pendingClaim));
+        when(claimRepository.save(any(Claim.class))).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
+
+        ClaimDecisionRequest req = new ClaimDecisionRequest("Telemetry sensor defect reported");
+
+        StepVerifier.create(service.rejectClaim(claimsOfficer, 11L, req))
+                .assertNext(response -> {
+                    assertEquals(11L, response.claimId());
+                    assertEquals("REJECTED", response.claimStatus());
+                    assertEquals("NOT_REQUIRED", response.payoutStatus());
+                    assertEquals(8L, response.claimsOfficerId());
+                    assertEquals("Telemetry sensor defect reported", response.claimsOfficerRemarks());
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void farmerCanSubmitFeedbackOnSettledClaim() {
+        Claim settledClaim = Claim.builder()
+                .claimId(12L)
+                .policyId(1L)
+                .farmerUserId(2L)
+                .status("SETTLED")
+                .payoutStatus("SUCCESS")
+                .compensationAmount(new BigDecimal("15000.00"))
+                .payoutPercentage(new BigDecimal("25.00"))
+                .availabilityPercentage(new BigDecimal("40.00"))
+                .build();
+
+        when(claimRepository.findById(12L)).thenReturn(Mono.just(settledClaim));
+        when(claimRepository.save(any(Claim.class))).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
+
+        ClaimFeedbackRequest feedbackReq = new ClaimFeedbackRequest(
+                "REQUEST_MORE_AMOUNT",
+                4,
+                "Drought was deeper than measured by soil probe",
+                new BigDecimal("5000.00")
+        );
+
+        StepVerifier.create(service.submitFeedback(farmer, 12L, feedbackReq))
+                .assertNext(response -> {
+                    assertEquals(12L, response.claimId());
+                    assertEquals("REQUEST_MORE_AMOUNT", response.feedbackStatus());
+                    assertEquals(4, response.feedbackRating());
+                    assertEquals("Drought was deeper than measured by soil probe", response.feedbackComments());
+                    assertEquals(new BigDecimal("5000.00"), response.requestedAdditionalAmount());
+                })
+                .verifyComplete();
     }
 
     @Test
@@ -180,10 +287,10 @@ class EventClaimsServiceImplTest {
         mockActivePolicy();
         mockReadingSave(3L);
 
-        when(claimRepository.existsByPolicyIdAndEventDateAndStatus(
+        when(claimRepository.existsByPolicyIdAndEventDateAndStatusIn(
                 eq(1L),
                 any(LocalDate.class),
-                eq("SETTLED")
+                any()
         )).thenReturn(Mono.just(true));
 
         StepVerifier.create(

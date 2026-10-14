@@ -13,6 +13,7 @@ These accounts are permanently provisioned in the local MySQL database and are r
 | **ADMIN** | IrrigaShield Admin | admin@irrigashield.com | Admin12345 | /admin/users, /admin/plans |
 | **UNDERWRITER** | Lead Underwriter | underwriter@irrigashield.com | Underwriter123 | /underwriting |
 | **DATA_PROVIDER** | IoT Sensor Network | dataprovider@irrigashield.com | Provider123 | /data-provider |
+| **CLAIMS_OFFICER** | IrrigaShield Claims Officer | officer@irrigashield.com | Officer12345 | /claims-officer/claims |
 | **FARMER** | Ramesh Patel | farmer@irrigashield.com | Password123 | /farmer/profile, /farmer/farms, /farmer/plans, /farmer/applications, /farmer/policies, /farmer/claims |
 
 ---

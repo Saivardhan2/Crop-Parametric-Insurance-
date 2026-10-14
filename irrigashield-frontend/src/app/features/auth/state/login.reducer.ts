@@ -9,13 +9,12 @@ export const loginReducer = createReducer(
     loginStatus: { loading: true, success: false, error: '' }
   })),
   on(LoginActions.loginSuccess, (state, { jwtRes }) => {
-    localStorage.setItem('token', jwtRes.accessToken);
     localStorage.setItem('role', jwtRes.user.role);
     localStorage.setItem('currentUser', JSON.stringify(jwtRes.user));
     return {
       ...state,
       isLoggedIn: true,
-      token: jwtRes.accessToken,
+      token: null,
       role: jwtRes.user.role,
       loginStatus: { loading: false, success: true, error: '' }
     };
@@ -25,7 +24,6 @@ export const loginReducer = createReducer(
     loginStatus: { loading: false, success: false, error }
   })),
   on(LoginActions.logout, (state) => {
-    localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('currentUser');
     return {

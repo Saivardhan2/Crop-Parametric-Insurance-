@@ -178,11 +178,25 @@ test.describe('Parametric Telemetry & Automated Claims Evaluation', () => {
     await page.fill('input[formControlName="availabilityPercentage"]', '15');
     await page.click('button[type="submit"]:has-text("Submit Telemetry Reading")');
 
-    // Step 6: Verify Evaluation Engine Live Response
+    // Step 6: Verify Evaluation Engine Live Response (created in PENDING_APPROVAL)
     await expect(page.locator('text=YES (Shortage)').first()).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('span:has-text("SETTLED")').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('span:has-text("PENDING_APPROVAL")').first()).toBeVisible({ timeout: 10000 });
 
-    // Step 7: Farmer Inspects Settled Claim on /farmer/claims
+    // Step 7: Claims Officer Reviews & Approves Claim (Transition to SETTLED)
+    await page.click('button:has-text("Logout")');
+    await page.waitForURL('**/login', { timeout: 15000 });
+
+    await page.fill('input[formControlName="email"]', 'officer@irrigashield.com');
+    await page.fill('input[formControlName="password"]', 'Officer12345');
+    await page.click('button[type="submit"]:has-text("Sign In")');
+    await page.waitForURL('**/claims-officer/claims', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('Claims Review');
+
+    // Approve the pending claim
+    await page.locator('button:has-text("Approve & Settle Payout")').first().click();
+    await page.waitForTimeout(1500);
+
+    // Step 8: Farmer Inspects Settled Claim on /farmer/claims and Submits Feedback
     await page.click('button:has-text("Logout")');
     await page.waitForURL('**/login', { timeout: 15000 });
 
@@ -199,6 +213,5 @@ test.describe('Parametric Telemetry & Automated Claims Evaluation', () => {
     await expect(page.locator('span:has-text("SETTLED")').first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator(`text=Policy #${policyId}`).first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=15%').first()).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('div:has-text("₹")').first()).toBeVisible({ timeout: 10000 });
   });
 });

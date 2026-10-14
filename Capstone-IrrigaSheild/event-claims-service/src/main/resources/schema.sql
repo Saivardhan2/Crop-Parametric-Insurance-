@@ -30,6 +30,15 @@ CREATE TABLE IF NOT EXISTS claims (
     payout_status VARCHAR(20) NOT NULL,
     status VARCHAR(20) NOT NULL,
 
+    claims_officer_id BIGINT NULL,
+    claims_officer_remarks VARCHAR(500) NULL,
+
+    feedback_status VARCHAR(30) NULL,
+    feedback_rating INT NULL,
+    feedback_comments VARCHAR(1000) NULL,
+    requested_additional_amount DECIMAL(12, 2) NULL,
+    feedback_submitted_at TIMESTAMP NULL,
+
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     settled_at TIMESTAMP NULL,
 
@@ -51,3 +60,10 @@ CREATE TABLE IF NOT EXISTS claims (
 
 -- Automatic schema migration for existing databases
 ALTER TABLE claims ADD COLUMN event_date DATE NULL;
+ALTER TABLE claims ADD COLUMN claims_officer_id BIGINT NULL;
+ALTER TABLE claims ADD COLUMN claims_officer_remarks VARCHAR(500) NULL;
+ALTER TABLE claims ADD COLUMN feedback_status VARCHAR(30) NULL;
+ALTER TABLE claims ADD COLUMN feedback_rating INT NULL;
+ALTER TABLE claims ADD COLUMN feedback_comments VARCHAR(1000) NULL;
+ALTER TABLE claims ADD COLUMN requested_additional_amount DECIMAL(12, 2) NULL;
+ALTER TABLE claims ADD COLUMN feedback_submitted_at TIMESTAMP NULL;

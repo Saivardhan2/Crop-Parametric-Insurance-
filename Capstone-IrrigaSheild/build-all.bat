@@ -32,7 +32,7 @@ REM ============================================================================
 REM IrrigaShield Parallel Microservices Build Script
 REM 
 REM NOTE: You do NOT need to manually delete existing JAR files before building.
-REM The "mvn clean package -DskipTests" command automatically invokes Maven's
+REM The "mvn clean package -DskipTests -Djacoco.skip=true" command automatically invokes Maven's
 REM clean lifecycle:
 REM   clean      -> Deletes existing <service>/target/ directory completely
 REM   compile    -> Recompiles fresh source files
@@ -177,11 +177,11 @@ pushd "%~dp0%SERVICE%"
 
 REM "clean" deletes target/ automatically; "package" outputs fresh JARs
 if exist "mvnw.cmd" (
-    call ".\mvnw.cmd" clean package -DskipTests > "%~dp0build-logs\%SERVICE%.log" 2>&1
+    call ".\mvnw.cmd" clean package -DskipTests -Djacoco.skip=true > "%~dp0build-logs\%SERVICE%.log" 2>&1
 ) else if exist "%~dp0%SERVICE%\mvnw.cmd" (
-    call "%~dp0%SERVICE%\mvnw.cmd" clean package -DskipTests > "%~dp0build-logs\%SERVICE%.log" 2>&1
+    call "%~dp0%SERVICE%\mvnw.cmd" clean package -DskipTests -Djacoco.skip=true > "%~dp0build-logs\%SERVICE%.log" 2>&1
 ) else (
-    call mvn clean package -DskipTests > "%~dp0build-logs\%SERVICE%.log" 2>&1
+    call mvn clean package -DskipTests -Djacoco.skip=true > "%~dp0build-logs\%SERVICE%.log" 2>&1
 )
 
 if errorlevel 1 (

@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.example.eventclaimsservice.client.PolicyServiceClient;
+import org.example.eventclaimsservice.dto.ClaimDecisionRequest;
+import org.example.eventclaimsservice.dto.ClaimFeedbackRequest;
 import org.example.eventclaimsservice.dto.ClaimResponse;
 import org.example.eventclaimsservice.dto.IrrigationReadingRequest;
 import org.example.eventclaimsservice.dto.PayoutSlabConfig;
@@ -113,6 +115,140 @@ public class EventClaimsServiceImpl implements EventClaimsService {
                 .map(this::toClaimResponse);
     }
 
+    @Override
+    public Flux<ClaimResponse> getAllClaims(
+            AuthenticatedUser user) {
+
+        return claimRepository
+                .findAllByOrderByCreatedAtDesc()
+                .map(this::toClaimResponse);
+    }
+
+    @Override
+    public Mono<ClaimResponse> approveClaim(
+            AuthenticatedUser officer,
+            Long claimId,
+            ClaimDecisionRequest request) {
+
+        return claimRepository.findById(claimId)
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "CLAIM_NOT_FOUND",
+                        "Claim not found with id: " + claimId
+                )))
+                .flatMap(claim -> {
+                    if (!"PENDING_APPROVAL".equalsIgnoreCase(claim.getStatus())) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.BAD_REQUEST,
+                                "CLAIM_NOT_PENDING",
+                                "Claim status is '" + claim.getStatus() + "'; only claims in PENDING_APPROVAL can be approved"
+                        ));
+                    }
+
+                    LocalDateTime now = LocalDateTime.now();
+                    claim.setStatus("SETTLED");
+                    claim.setPayoutStatus("SUCCESS");
+                    claim.setSettledAt(now);
+                    claim.setClaimsOfficerId(officer.userId());
+                    if (request != null && request.remarks() != null && !request.remarks().isBlank()) {
+                        claim.setClaimsOfficerRemarks(request.remarks().trim());
+                    }
+
+                    log.info("Claim id={} approved by officer id={}", claimId, officer.userId());
+                    return claimRepository.save(claim).map(this::toClaimResponse);
+                });
+    }
+
+    @Override
+    public Mono<ClaimResponse> rejectClaim(
+            AuthenticatedUser officer,
+            Long claimId,
+            ClaimDecisionRequest request) {
+
+        return claimRepository.findById(claimId)
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "CLAIM_NOT_FOUND",
+                        "Claim not found with id: " + claimId
+                )))
+                .flatMap(claim -> {
+                    if (!"PENDING_APPROVAL".equalsIgnoreCase(claim.getStatus())) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.BAD_REQUEST,
+                                "CLAIM_NOT_PENDING",
+                                "Claim status is '" + claim.getStatus() + "'; only claims in PENDING_APPROVAL can be rejected"
+                        ));
+                    }
+
+                    LocalDateTime now = LocalDateTime.now();
+                    claim.setStatus("REJECTED");
+                    claim.setPayoutStatus("NOT_REQUIRED");
+                    claim.setSettledAt(now);
+                    claim.setClaimsOfficerId(officer.userId());
+                    if (request != null && request.remarks() != null && !request.remarks().isBlank()) {
+                        claim.setClaimsOfficerRemarks(request.remarks().trim());
+                    }
+
+                    log.info("Claim id={} rejected by officer id={}", claimId, officer.userId());
+                    return claimRepository.save(claim).map(this::toClaimResponse);
+                });
+    }
+
+    @Override
+    public Mono<ClaimResponse> submitFeedback(
+            AuthenticatedUser farmer,
+            Long claimId,
+            ClaimFeedbackRequest request) {
+
+        return claimRepository.findById(claimId)
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "CLAIM_NOT_FOUND",
+                        "Claim not found with id: " + claimId
+                )))
+                .flatMap(claim -> {
+                    if (!claim.getFarmerUserId().equals(farmer.userId())) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.FORBIDDEN,
+                                "FORBIDDEN",
+                                "You can only submit feedback for your own claims"
+                        ));
+                    }
+
+                    if (!"SETTLED".equalsIgnoreCase(claim.getStatus())) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.BAD_REQUEST,
+                                "CLAIM_NOT_SETTLED",
+                                "Feedback can only be submitted for settled claims"
+                        ));
+                    }
+
+                    String status = request.feedbackStatus() != null
+                            ? request.feedbackStatus().trim().toUpperCase()
+                            : "SATISFIED";
+
+                    if (!status.equals("SATISFIED") && !status.equals("REQUEST_MORE_AMOUNT")) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.BAD_REQUEST,
+                                "INVALID_FEEDBACK_STATUS",
+                                "Feedback status must be SATISFIED or REQUEST_MORE_AMOUNT"
+                        ));
+                    }
+
+                    claim.setFeedbackStatus(status);
+                    claim.setFeedbackRating(request.feedbackRating());
+                    claim.setFeedbackComments(
+                            request.feedbackComments() != null ? request.feedbackComments().trim() : null
+                    );
+                    claim.setRequestedAdditionalAmount(request.requestedAdditionalAmount());
+                    claim.setFeedbackSubmittedAt(LocalDateTime.now());
+
+                    log.info("Feedback submitted for claim id={} by farmer id={}, status={}",
+                            claimId, farmer.userId(), status);
+                    return claimRepository.save(claim).map(this::toClaimResponse);
+                });
+    }
+
     private IrrigationReading createReading(
             AuthenticatedUser dataProvider,
             IrrigationReadingRequest request,
@@ -151,12 +287,12 @@ public class EventClaimsServiceImpl implements EventClaimsService {
         // 3. Threshold breached: identify event date from reading
         LocalDate eventDate = reading.getRecordedAt().toLocalDate();
 
-        // 4. Check whether a settled claim already exists for this (policyId, eventDate)
+        // 4. Check whether a pending or settled claim already exists for this (policyId, eventDate)
         return claimRepository
-                .existsByPolicyIdAndEventDateAndStatus(
+                .existsByPolicyIdAndEventDateAndStatusIn(
                         config.policyId(),
                         eventDate,
-                        "SETTLED"
+                        List.of("PENDING_APPROVAL", "SETTLED")
                 )
                 .flatMap(claimExists -> {
                     if (claimExists) {
@@ -164,7 +300,7 @@ public class EventClaimsServiceImpl implements EventClaimsService {
                                 new ApiException(
                                         HttpStatus.CONFLICT,
                                         "EVENT_CLAIM_ALREADY_EXISTS",
-                                        "A claim has already been settled for this policy on " + eventDate
+                                        "A claim has already been registered or settled for this policy on " + eventDate
                                 )
                         );
                     }
@@ -182,7 +318,7 @@ public class EventClaimsServiceImpl implements EventClaimsService {
                             payoutPercentage
                     );
 
-                    // 7. Aggregate coverage limit check: calculate remaining coverage
+                    // 7. Aggregate coverage limit check: calculate remaining coverage against settled claims
                     return claimRepository
                             .findAllByPolicyIdAndStatus(config.policyId(), "SETTLED")
                             .map(Claim::getCompensationAmount)
@@ -280,10 +416,10 @@ public class EventClaimsServiceImpl implements EventClaimsService {
                 .payoutPercentage(payoutPercentage)
                 .coverageAmount(policy.coverageAmount())
                 .compensationAmount(compensationAmount)
-                .payoutStatus("SUCCESS")
-                .status("SETTLED")
+                .payoutStatus("PENDING")
+                .status("PENDING_APPROVAL")
                 .createdAt(now)
-                .settledAt(now)
+                .settledAt(null)
                 .build();
     }
 
@@ -301,7 +437,15 @@ public class EventClaimsServiceImpl implements EventClaimsService {
                 BigDecimal.ZERO,
                 "NOT_REQUIRED",
                 "NO_CLAIM",
-                reading.getRecordedAt()
+                reading.getRecordedAt(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
         );
     }
 
@@ -319,7 +463,15 @@ public class EventClaimsServiceImpl implements EventClaimsService {
                 claim.getCompensationAmount(),
                 claim.getPayoutStatus(),
                 claim.getStatus(),
-                claim.getCreatedAt()
+                claim.getCreatedAt(),
+                claim.getClaimsOfficerId(),
+                claim.getClaimsOfficerRemarks(),
+                claim.getFeedbackStatus(),
+                claim.getFeedbackRating(),
+                claim.getFeedbackComments(),
+                claim.getRequestedAdditionalAmount(),
+                claim.getFeedbackSubmittedAt(),
+                claim.getSettledAt()
         );
     }
 

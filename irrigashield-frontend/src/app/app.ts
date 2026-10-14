@@ -16,7 +16,7 @@ export class App implements OnInit {
   private store = inject(Store);
 
   ngOnInit(): void {
-    if (localStorage.getItem('token')) {
+    if (localStorage.getItem('currentUser')) {
       this.store.dispatch(loadUser());
     }
   }

@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.example.eventclaimsservice.client.PolicyServiceClient;
+import org.example.eventclaimsservice.dto.ClaimDecisionRequest;
+import org.example.eventclaimsservice.dto.ClaimFeedbackRequest;
 import org.example.eventclaimsservice.dto.IrrigationReadingRequest;
 import org.example.eventclaimsservice.dto.PolicyClaimConfigurationResponse;
 import org.example.eventclaimsservice.repository.ClaimRepository;
@@ -121,14 +123,15 @@ class EventClaimsMicroserviceIntegrationTest {
     }
 
     @Test
-    void lowReadingShouldCreateSettledClaim() {
+    void lowReadingShouldCreatePendingApprovalClaimAndOfficerApprovalShouldSettleIt() {
 
         mockActivePolicy();
 
         IrrigationReadingRequest request =
                 createRequest("40.00");
 
-        dataProviderPost(request)
+        // 1. Reading creates claim in PENDING_APPROVAL
+        byte[] responseBytes = dataProviderPost(request)
                 .exchange()
                 .expectStatus()
                 .isCreated()
@@ -150,9 +153,51 @@ class EventClaimsMicroserviceIntegrationTest {
                 .jsonPath("$.compensationAmount")
                 .isEqualTo(15000.0)
                 .jsonPath("$.payoutStatus")
-                .isEqualTo("SUCCESS")
+                .isEqualTo("PENDING")
                 .jsonPath("$.claimStatus")
-                .isEqualTo("SETTLED");
+                .isEqualTo("PENDING_APPROVAL")
+                .returnResult()
+                .getResponseBody();
+
+        Long claimId = claimRepository.findAll().blockFirst().getClaimId();
+
+        // 2. Claims Officer approves the pending claim -> Claim is SETTLED
+        webTestClient.put()
+                .uri("/api/claims/" + claimId + "/approve")
+                .header("X-User-Id", "99")
+                .header("X-User-Email", "officer@irrigashield.com")
+                .header("X-User-Roles", "ROLE_CLAIMS_OFFICER")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new ClaimDecisionRequest("Approved by officer after sensor verification"))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.claimId")
+                .isEqualTo(claimId)
+                .jsonPath("$.claimStatus")
+                .isEqualTo("SETTLED")
+                .jsonPath("$.payoutStatus")
+                .isEqualTo("SUCCESS")
+                .jsonPath("$.claimsOfficerRemarks")
+                .isEqualTo("Approved by officer after sensor verification");
+
+        // 3. Farmer submits feedback on settled claim
+        webTestClient.post()
+                .uri("/api/claims/" + claimId + "/feedback")
+                .header("X-User-Id", "2") // Farmer user ID from policy config
+                .header("X-User-Email", "farmer@irrigashield.com")
+                .header("X-User-Roles", "ROLE_FARMER")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new ClaimFeedbackRequest("SATISFIED", 5, "Prompt settlement", BigDecimal.ZERO))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.feedbackStatus")
+                .isEqualTo("SATISFIED")
+                .jsonPath("$.feedbackRating")
+                .isEqualTo(5);
     }
 
     @Test

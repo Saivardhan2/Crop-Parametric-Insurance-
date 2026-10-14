@@ -59,6 +59,27 @@ public class Claim {
     @Column("status")
     private String status;
 
+    @Column("claims_officer_id")
+    private Long claimsOfficerId;
+
+    @Column("claims_officer_remarks")
+    private String claimsOfficerRemarks;
+
+    @Column("feedback_status")
+    private String feedbackStatus;
+
+    @Column("feedback_rating")
+    private Integer feedbackRating;
+
+    @Column("feedback_comments")
+    private String feedbackComments;
+
+    @Column("requested_additional_amount")
+    private BigDecimal requestedAdditionalAmount;
+
+    @Column("feedback_submitted_at")
+    private LocalDateTime feedbackSubmittedAt;
+
     @Column("created_at")
     private LocalDateTime createdAt;
 

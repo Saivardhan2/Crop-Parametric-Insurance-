@@ -1,14 +1,17 @@
 import { Component, OnInit, inject, ChangeDetectorRef, Optional } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { loadProfile, saveProfile } from '../../state/farms.actions';
 import { farmerProfileSelector, farmsStatusSelector } from '../../state/farms.selector';
 import { FarmsService } from '../../services/farms-service';
+import { ClaimsService } from '../../../claims/services/claims-service';
+import { ClaimResponseDTO, ClaimFeedbackReqDTO } from '../../../claims/models/ClaimResponseDTO';
 
 @Component({
   selector: 'app-farmer-profile',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, FormsModule, CommonModule],
   templateUrl: './farmer-profile-component.html',
   styleUrl: './farmer-profile-component.css'
 })
@@ -16,6 +19,7 @@ export class FarmerProfileComponent implements OnInit {
   private fb = inject(FormBuilder);
   private store = inject(Store);
   @Optional() private farmsService = inject(FarmsService, { optional: true });
+  @Optional() private claimsService = inject(ClaimsService, { optional: true });
   private cdr = inject(ChangeDetectorRef);
 
   profile$ = this.store.select(farmerProfileSelector);
@@ -27,6 +31,13 @@ export class FarmerProfileComponent implements OnInit {
   loading = true;
   successMessage = '';
   errorMessage = '';
+
+  // Claims & Feedback integration
+  settledClaims: ClaimResponseDTO[] = [];
+  claimsLoading = false;
+  activeFeedbackForms: { [key: number]: ClaimFeedbackReqDTO } = {};
+  feedbackLoading: { [key: number]: boolean } = {};
+  feedbackMessage: { [key: number]: { type: 'success' | 'error'; text: string } } = {};
 
   profileForm: FormGroup = this.fb.group({
     fullName: [''],
@@ -44,6 +55,7 @@ export class FarmerProfileComponent implements OnInit {
   ngOnInit(): void {
     this.store.dispatch(loadProfile());
     this.fetchProfile();
+    this.fetchFarmerClaims();
   }
 
   fetchProfile(): void {
@@ -84,6 +96,60 @@ export class FarmerProfileComponent implements OnInit {
         this.savedProfile = null;
         this.hasBackendRecord = false;
         this.isEditing = true;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  fetchFarmerClaims(): void {
+    if (!this.claimsService) return;
+    this.claimsLoading = true;
+    this.claimsService.getMyClaims().subscribe({
+      next: (claims) => {
+        this.claimsLoading = false;
+        this.settledClaims = claims || [];
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.claimsLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  openFeedbackForm(claimId: number): void {
+    this.activeFeedbackForms[claimId] = {
+      feedbackStatus: 'SATISFIED',
+      feedbackRating: 5,
+      feedbackComments: '',
+      requestedAdditionalAmount: 0
+    };
+    this.cdr.detectChanges();
+  }
+
+  cancelFeedbackForm(claimId: number): void {
+    delete this.activeFeedbackForms[claimId];
+    this.cdr.detectChanges();
+  }
+
+  onSubmitFeedback(claimId: number): void {
+    const form = this.activeFeedbackForms[claimId];
+    if (!form || !this.claimsService) return;
+    this.feedbackLoading[claimId] = true;
+    this.claimsService.submitClaimFeedback(claimId, form).subscribe({
+      next: (updated) => {
+        this.feedbackLoading[claimId] = false;
+        delete this.activeFeedbackForms[claimId];
+        this.feedbackMessage[claimId] = { type: 'success', text: 'Thank you! Your feedback has been recorded.' };
+        const idx = this.settledClaims.findIndex(c => c.claimId === updated.claimId);
+        if (idx !== -1) {
+          this.settledClaims[idx] = updated;
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.feedbackLoading[claimId] = false;
+        this.feedbackMessage[claimId] = { type: 'error', text: err.error?.message || 'Failed to submit feedback.' };
         this.cdr.detectChanges();
       }
     });

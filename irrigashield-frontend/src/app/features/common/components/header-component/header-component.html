@@ -29,9 +29,13 @@
         @if (role === 'DATA_PROVIDER') {
           <a routerLink="/data-provider" routerLinkActive="text-[#75013F] font-semibold" class="text-gray-600 hover:text-[#75013F] transition-colors">Water Readings</a>
         }
+        @if (role === 'CLAIMS_OFFICER') {
+          <a routerLink="/claims-officer/claims" routerLinkActive="text-[#75013F] font-semibold" class="text-gray-600 hover:text-[#75013F] transition-colors">Claims Review Queue</a>
+        }
         @if (role === 'ADMIN') {
           <a routerLink="/admin/users" routerLinkActive="text-[#75013F] font-semibold" class="text-gray-600 hover:text-[#75013F] transition-colors">User Management</a>
           <a routerLink="/admin/plans" routerLinkActive="text-[#75013F] font-semibold" class="text-gray-600 hover:text-[#75013F] transition-colors">Plans &amp; Rules</a>
+          <a routerLink="/claims-officer/claims" routerLinkActive="text-[#75013F] font-semibold" class="text-gray-600 hover:text-[#75013F] transition-colors">Claims Queue</a>
         }
       }
     </div>

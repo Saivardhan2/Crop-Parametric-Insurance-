@@ -120,4 +120,149 @@
       </form>
     </div>
   }
+
+  <!-- CLAIMS SETTLEMENT & FEEDBACK SECTION (MENTOR REQUIREMENT) -->
+  <div class="bg-white border border-[#EAE5DF] rounded-2xl p-6 shadow-sm space-y-4">
+    <div class="flex items-center justify-between border-b border-[#EAE5DF] pb-3">
+      <div>
+        <h2 class="text-base font-bold text-[#000000]">Claims Settlement &amp; Feedback</h2>
+        <p class="text-xs text-gray-500">Provide feedback on claim payouts or request additional compensation if crop damage exceeded telemetry settlement</p>
+      </div>
+      <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+        {{ settledClaims.length }} Claim(s)
+      </span>
+    </div>
+
+    @if (settledClaims.length === 0) {
+      <div class="py-6 text-center text-gray-400 text-xs">
+        No claims recorded yet for your active policies.
+      </div>
+    } @else {
+      <div class="space-y-4 pt-2">
+        @for (claim of settledClaims; track claim.claimId) {
+          <div class="border border-[#EAE5DF] rounded-xl p-4 bg-gray-50/50 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-gray-900">Claim #{{ claim.claimId }}</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                  [class]="claim.claimStatus === 'SETTLED' ? 'bg-green-100 text-green-800' : (claim.claimStatus === 'REJECTED' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800')">
+                  {{ claim.claimStatus === 'PENDING_APPROVAL' ? 'Awaiting Approval' : claim.claimStatus }}
+                </span>
+                <span class="text-xs text-gray-500">Policy #{{ claim.policyId }}</span>
+              </div>
+              <div class="text-sm font-extrabold text-[#75013F]">
+                &#8377;{{ claim.compensationAmount }}
+              </div>
+            </div>
+
+            <!-- Feedback result message -->
+            @if (feedbackMessage[claim.claimId!]) {
+              <div [class]="feedbackMessage[claim.claimId!].type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'"
+                   class="border rounded-lg p-2 text-xs font-medium">
+                {{ feedbackMessage[claim.claimId!].text }}
+              </div>
+            }
+
+            <!-- Display existing feedback if submitted -->
+            @if (claim.feedbackStatus) {
+              <div class="bg-green-50/60 border border-green-200 rounded-lg p-3 text-xs space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-green-900">
+                    @if (claim.feedbackStatus === 'SATISFIED') {
+                      &#9733; Satisfied (Rating: {{ claim.feedbackRating }}/5)
+                    } @else {
+                      Adjustment Requested (+&#8377;{{ claim.requestedAdditionalAmount }})
+                    }
+                  </span>
+                  @if (claim.feedbackSubmittedAt) {
+                    <span class="text-[10px] text-gray-500">{{ claim.feedbackSubmittedAt }}</span>
+                  }
+                </div>
+                @if (claim.feedbackComments) {
+                  <p class="text-gray-700 italic">&ldquo;{{ claim.feedbackComments }}&rdquo;</p>
+                }
+              </div>
+            }
+
+            <!-- If Settled and no feedback yet: show feedback trigger / form -->
+            @if (claim.claimStatus === 'SETTLED' && !claim.feedbackStatus) {
+              @if (!activeFeedbackForms[claim.claimId!]) {
+                <button (click)="openFeedbackForm(claim.claimId!)"
+                  class="text-xs font-semibold text-[#75013F] hover:text-[#590130] flex items-center gap-1.5 cursor-pointer">
+                  <span>&#9733;</span> Rate Settlement or Request Additional Compensation
+                </button>
+              } @else {
+                <div class="bg-white border border-[#EAE5DF] rounded-xl p-3.5 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-gray-900">Submit Settlement Feedback</span>
+                    <button (click)="cancelFeedbackForm(claim.claimId!)" class="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 p-2 bg-gray-50 border rounded-lg cursor-pointer text-xs"
+                      [class.border-[#75013F]]="activeFeedbackForms[claim.claimId!].feedbackStatus === 'SATISFIED'">
+                      <input type="radio" name="profile_feedback_{{ claim.claimId }}" value="SATISFIED"
+                        [(ngModel)]="activeFeedbackForms[claim.claimId!].feedbackStatus" />
+                      <span class="font-medium text-gray-800">Satisfied with Settlement</span>
+                    </label>
+
+                    <label class="flex items-center gap-2 p-2 bg-gray-50 border rounded-lg cursor-pointer text-xs"
+                      [class.border-[#75013F]]="activeFeedbackForms[claim.claimId!].feedbackStatus === 'REQUEST_MORE_AMOUNT'">
+                      <input type="radio" name="profile_feedback_{{ claim.claimId }}" value="REQUEST_MORE_AMOUNT"
+                        [(ngModel)]="activeFeedbackForms[claim.claimId!].feedbackStatus" />
+                      <span class="font-medium text-gray-800">Request More Amount</span>
+                    </label>
+                  </div>
+
+                  @if (activeFeedbackForms[claim.claimId!].feedbackStatus === 'SATISFIED') {
+                    <div>
+                      <label class="text-[11px] font-semibold text-gray-600 block mb-1">Satisfaction Rating:</label>
+                      <select [(ngModel)]="activeFeedbackForms[claim.claimId!].feedbackRating"
+                        class="w-full text-xs px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg">
+                        <option [ngValue]="5">&#9733;&#9733;&#9733;&#9733;&#9733; (5/5) - Fully Satisfied</option>
+                        <option [ngValue]="4">&#9733;&#9733;&#9733;&#9733;&#9734; (4/5) - Good Settlement</option>
+                        <option [ngValue]="3">&#9733;&#9733;&#9733;&#9734;&#9734; (3/5) - Average</option>
+                        <option [ngValue]="2">&#9733;&#9733;&#9734;&#9734;&#9734; (2/5) - Below Expectation</option>
+                        <option [ngValue]="1">&#9733;&#9734;&#9734;&#9734;&#9734; (1/5) - Dissatisfied</option>
+                      </select>
+                    </div>
+                  }
+
+                  @if (activeFeedbackForms[claim.claimId!].feedbackStatus === 'REQUEST_MORE_AMOUNT') {
+                    <div>
+                      <label class="text-[11px] font-semibold text-gray-600 block mb-1">Requested Additional Amount (&#8377;):</label>
+                      <input type="number" min="1" step="100"
+                        [(ngModel)]="activeFeedbackForms[claim.claimId!].requestedAdditionalAmount"
+                        placeholder="e.g. 5000"
+                        class="w-full text-xs px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg" />
+                    </div>
+                  }
+
+                  <div>
+                    <label class="text-[11px] font-semibold text-gray-600 block mb-1">Feedback Comments / Damage Details:</label>
+                    <textarea rows="2"
+                      [(ngModel)]="activeFeedbackForms[claim.claimId!].feedbackComments"
+                      placeholder="Explain crop damage situation or why more amount is required..."
+                      class="w-full text-xs px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg"></textarea>
+                  </div>
+
+                  <div class="flex justify-end gap-2 pt-1">
+                    <button (click)="cancelFeedbackForm(claim.claimId!)"
+                      class="px-3 py-1 text-xs text-gray-600 hover:text-gray-800">
+                      Cancel
+                    </button>
+                    <button (click)="onSubmitFeedback(claim.claimId!)"
+                      [disabled]="feedbackLoading[claim.claimId!]"
+                      class="px-4 py-1 text-xs font-semibold text-white bg-[#75013F] hover:bg-[#590130] rounded-lg shadow-sm cursor-pointer">
+                      Submit Feedback
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
 </div>

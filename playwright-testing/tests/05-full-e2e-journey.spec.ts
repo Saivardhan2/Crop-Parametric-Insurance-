@@ -243,16 +243,32 @@ test.describe('Full End-to-End Parametric Insurance Journey', () => {
     await page.fill('input[formControlName="availabilityPercentage"]', '12');
     await page.click('button[type="submit"]:has-text("Submit Telemetry Reading")');
 
-    // Verify Evaluation Engine Response
+    // Verify Evaluation Engine Response (created in PENDING_APPROVAL)
     await expect(page.locator('text=YES (Shortage)').first()).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('span:has-text("SETTLED")').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('span:has-text("PENDING_APPROVAL")').first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=50%').first()).toBeVisible({ timeout: 10000 });
 
     await page.click('button:has-text("Logout")');
     await page.waitForURL('**/login', { timeout: 15000 });
 
     // =========================================================================
-    // Stage 6: Farmer Inspects Automatically Settled Claim
+    // Stage 6: Claims Officer Reviews & Approves Claim to Settle It
+    // =========================================================================
+    await page.fill('input[formControlName="email"]', 'officer@irrigashield.com');
+    await page.fill('input[formControlName="password"]', 'Officer12345');
+    await page.click('button[type="submit"]:has-text("Sign In")');
+    await page.waitForURL('**/claims-officer/claims', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('Claims Review');
+
+    // Approve the pending claim
+    await page.locator('button:has-text("Approve & Settle Payout")').first().click();
+    await page.waitForTimeout(1500);
+
+    await page.click('button:has-text("Logout")');
+    await page.waitForURL('**/login', { timeout: 15000 });
+
+    // =========================================================================
+    // Stage 7: Farmer Inspects Settled Claim & Submits Payout Feedback
     // =========================================================================
     await page.fill('input[formControlName="email"]', farmerEmail);
     await page.fill('input[formControlName="password"]', 'Password123');

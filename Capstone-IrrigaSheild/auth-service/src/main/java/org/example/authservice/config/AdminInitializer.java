@@ -46,6 +46,11 @@ public class AdminInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
+        initializeAdmin();
+        initializeClaimsOfficer();
+    }
+
+    private void initializeAdmin() {
         String normalizedEmail = adminEmail
                 .trim()
                 .toLowerCase(Locale.ROOT);
@@ -80,13 +85,58 @@ public class AdminInitializer implements CommandLineRunner {
                             .flatMap(userRepository::save)
                             .doOnSuccess(user ->
                                     log.info(
-                                            "Initial admin account created"
+                                            "Initial admin account created: {}", normalizedEmail
                                     )
                             );
                 })
                 .doOnError(error ->
                         log.error(
                                 "Unable to initialize admin account",
+                                error
+                        )
+                )
+                .subscribe();
+    }
+
+    private void initializeClaimsOfficer() {
+        String officerEmail = "officer@irrigashield.com";
+
+        userRepository
+                .existsByEmailIgnoreCase(officerEmail)
+                .flatMap(exists -> {
+
+                    if (exists) {
+                        return Mono.empty();
+                    }
+
+                    return Mono.fromCallable(
+                                    () -> passwordEncoder.encode("Officer12345")
+                            )
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .map(encodedPassword -> {
+
+                                LocalDateTime now = LocalDateTime.now();
+
+                                return User.builder()
+                                        .name("IrrigaShield Claims Officer")
+                                        .email(officerEmail)
+                                        .passwordHash(encodedPassword)
+                                        .role(Role.CLAIMS_OFFICER.name())
+                                        .status(UserStatus.ACTIVE.name())
+                                        .createdAt(now)
+                                        .updatedAt(now)
+                                        .build();
+                            })
+                            .flatMap(userRepository::save)
+                            .doOnSuccess(user ->
+                                    log.info(
+                                            "Initial claims officer account created: {}", officerEmail
+                                    )
+                            );
+                })
+                .doOnError(error ->
+                        log.error(
+                                "Unable to initialize claims officer account",
                                 error
                         )
                 )

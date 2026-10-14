@@ -89,6 +89,11 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { roles: ['CLAIMS_OFFICER', 'ADMIN'] }
   },
+  {
+    path: 'claims',
+    component: ClaimsViewComponent,
+    canActivate: [authGuard]
+  },
 
   // Admin routes
   {

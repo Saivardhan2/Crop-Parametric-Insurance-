@@ -1,6 +1,7 @@
 package org.example.eventclaimsservice.repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 
 import org.example.eventclaimsservice.entity.Claim;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
@@ -22,6 +23,12 @@ public interface ClaimRepository
             String status
     );
 
+    Mono<Boolean> existsByPolicyIdAndEventDateAndStatusIn(
+            Long policyId,
+            LocalDate eventDate,
+            Collection<String> statuses
+    );
+
     Flux<Claim> findAllByPolicyIdAndStatus(
             Long policyId,
             String status
@@ -30,4 +37,6 @@ public interface ClaimRepository
     Flux<Claim> findAllByFarmerUserIdOrderByCreatedAtDesc(
             Long farmerUserId
     );
+
+    Flux<Claim> findAllByOrderByCreatedAtDesc();
 }

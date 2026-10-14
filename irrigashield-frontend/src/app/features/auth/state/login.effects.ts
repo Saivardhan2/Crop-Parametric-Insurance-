@@ -19,9 +19,6 @@ export class LoginEffects {
       switchMap(({ jwtReq }) =>
         this.authService.login(jwtReq).pipe(
           tap((jwtRes) => {
-            if (jwtRes?.accessToken) {
-              localStorage.setItem('token', jwtRes.accessToken);
-            }
             if (jwtRes?.user) {
               localStorage.setItem('role', jwtRes.user.role);
               localStorage.setItem('currentUser', JSON.stringify(jwtRes.user));
@@ -33,6 +30,8 @@ export class LoginEffects {
               this.router.navigate(['/underwriting']);
             } else if (role === 'DATA_PROVIDER') {
               this.router.navigate(['/data-provider']);
+            } else if (role === 'CLAIMS_OFFICER') {
+              this.router.navigate(['/claims-officer/claims']);
             } else {
               this.router.navigate(['/farmer/farms']);
             }
@@ -68,8 +67,17 @@ export class LoginEffects {
   logout$ = createEffect(() =>
     this.actions$.pipe(
       ofType(LoginActions.logout),
-      tap(() => this.router.navigate(['/login'])),
-      map(() => eraseUser())
+      switchMap(() =>
+        this.authService.logout().pipe(
+          catchError(() => of(null)),
+          tap(() => {
+            localStorage.removeItem('role');
+            localStorage.removeItem('currentUser');
+            this.router.navigate(['/login']);
+          }),
+          map(() => eraseUser())
+        )
+      )
     )
   );
 }
