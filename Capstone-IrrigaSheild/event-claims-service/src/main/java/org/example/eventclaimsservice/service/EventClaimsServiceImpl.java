@@ -150,6 +150,9 @@ public class EventClaimsServiceImpl implements EventClaimsService {
                     claim.setPayoutStatus("SUCCESS");
                     claim.setSettledAt(now);
                     claim.setClaimsOfficerId(officer.userId());
+                    if (request != null && request.adjustedAmount() != null && request.adjustedAmount().compareTo(BigDecimal.ZERO) > 0) {
+                        claim.setCompensationAmount(request.adjustedAmount());
+                    }
                     if (request != null && request.remarks() != null && !request.remarks().isBlank()) {
                         claim.setClaimsOfficerRemarks(request.remarks().trim());
                     }
@@ -185,6 +188,9 @@ public class EventClaimsServiceImpl implements EventClaimsService {
                     claim.setPayoutStatus("NOT_REQUIRED");
                     claim.setSettledAt(now);
                     claim.setClaimsOfficerId(officer.userId());
+                    if (request != null && request.adjustedAmount() != null && request.adjustedAmount().compareTo(BigDecimal.ZERO) > 0) {
+                        claim.setCompensationAmount(request.adjustedAmount());
+                    }
                     if (request != null && request.remarks() != null && !request.remarks().isBlank()) {
                         claim.setClaimsOfficerRemarks(request.remarks().trim());
                     }

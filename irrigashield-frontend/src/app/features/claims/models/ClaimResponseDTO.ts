@@ -22,6 +22,7 @@ export interface ClaimResponseDTO {
 
 export interface ClaimDecisionReqDTO {
   remarks?: string;
+  adjustedAmount?: number;
 }
 
 export interface ClaimFeedbackReqDTO {

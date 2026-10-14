@@ -216,6 +216,39 @@ class EventClaimsServiceImplTest {
     }
 
     @Test
+    void claimsOfficerCanApproveAndAdjustCompensationAmount() {
+        Claim pendingClaim = Claim.builder()
+                .claimId(15L)
+                .policyId(1L)
+                .farmerUserId(2L)
+                .farmId(3L)
+                .availabilityPercentage(new BigDecimal("15.00"))
+                .payoutPercentage(new BigDecimal("50.00"))
+                .coverageAmount(new BigDecimal("50000.00"))
+                .compensationAmount(new BigDecimal("25000.00"))
+                .status("PENDING_APPROVAL")
+                .payoutStatus("PENDING")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(claimRepository.findById(15L)).thenReturn(Mono.just(pendingClaim));
+        when(claimRepository.save(any(Claim.class))).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
+
+        ClaimDecisionRequest req = new ClaimDecisionRequest("Adjusted based on plot assessment", new BigDecimal("32000.00"));
+
+        StepVerifier.create(service.approveClaim(claimsOfficer, 15L, req))
+                .assertNext(response -> {
+                    assertEquals(15L, response.claimId());
+                    assertEquals("SETTLED", response.claimStatus());
+                    assertEquals("SUCCESS", response.payoutStatus());
+                    assertEquals(new BigDecimal("32000.00"), response.compensationAmount());
+                    assertEquals(8L, response.claimsOfficerId());
+                    assertEquals("Adjusted based on plot assessment", response.claimsOfficerRemarks());
+                })
+                .verifyComplete();
+    }
+
+    @Test
     void claimsOfficerCanRejectPendingClaim() {
         Claim pendingClaim = Claim.builder()
                 .claimId(11L)

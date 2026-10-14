@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, of } from 'rxjs';
-import { ClaimResponseDTO, ClaimFeedbackReqDTO } from '../models/ClaimResponseDTO';
+import { ClaimResponseDTO, ClaimFeedbackReqDTO, ClaimDecisionReqDTO } from '../models/ClaimResponseDTO';
 import { IrrigationReadingReqDTO } from '../models/IrrigationReadingReqDTO';
 
 @Injectable({
@@ -23,8 +23,17 @@ export class ClaimsService {
     return this.http.get<ClaimResponseDTO[]>(this.baseUrl + '/claims/all');
   }
 
-  approveClaim(claimId: number, remarks?: string): Observable<ClaimResponseDTO> {
-    return this.http.put<ClaimResponseDTO>(this.baseUrl + '/claims/' + claimId + '/approve', { remarks: remarks || '' });
+  approveClaim(claimId: number, remarksOrReq?: string | ClaimDecisionReqDTO, adjustedAmount?: number): Observable<ClaimResponseDTO> {
+    let body: ClaimDecisionReqDTO = {};
+    if (typeof remarksOrReq === 'object' && remarksOrReq !== null) {
+      body = remarksOrReq;
+    } else {
+      body = {
+        remarks: remarksOrReq || '',
+        adjustedAmount: adjustedAmount
+      };
+    }
+    return this.http.put<ClaimResponseDTO>(this.baseUrl + '/claims/' + claimId + '/approve', body);
   }
 
   rejectClaim(claimId: number, remarks?: string): Observable<ClaimResponseDTO> {

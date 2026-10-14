@@ -239,8 +239,10 @@ test.describe('Full End-to-End Parametric Insurance Journey', () => {
     await expect(page.locator('h1')).toContainText('IoT Telemetry');
 
     // Submit 12% water availability reading (matches 0% - 15% slab -> 50% payout)
-    await page.fill('input[formControlName="policyId"]', policyId);
-    await page.fill('input[formControlName="availabilityPercentage"]', '12');
+    await page.locator('input[formControlName="policyId"]').clear();
+    await page.locator('input[formControlName="policyId"]').fill(policyId);
+    await page.locator('input[formControlName="availabilityPercentage"]').clear();
+    await page.locator('input[formControlName="availabilityPercentage"]').fill('12');
     await page.click('button[type="submit"]:has-text("Submit Telemetry Reading")');
 
     // Verify Evaluation Engine Response (created in PENDING_APPROVAL)
@@ -259,6 +261,16 @@ test.describe('Full End-to-End Parametric Insurance Journey', () => {
     await page.click('button[type="submit"]:has-text("Sign In")');
     await page.waitForURL('**/claims-officer/claims', { timeout: 15000 });
     await expect(page.locator('h1')).toContainText('Claims Review');
+
+    // Claims Officer edits compensation before giving approval
+    const compInput = page.locator('input[placeholder="Enter approved payout"]').first();
+    await expect(compInput).toBeVisible({ timeout: 10000 });
+    await compInput.fill('26000');
+
+    const remarksInput = page.locator('input[placeholder*="Officer review remarks"]').first();
+    if (await remarksInput.isVisible()) {
+      await remarksInput.fill('Sensor breach verified; compensation adjusted to 26000');
+    }
 
     // Approve the pending claim
     await page.locator('button:has-text("Approve & Settle Payout")').first().click();

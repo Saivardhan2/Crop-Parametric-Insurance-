@@ -25,6 +25,7 @@ export class ClaimsViewComponent implements OnInit {
   activeFilter: 'ALL' | 'PENDING' | 'SETTLED' | 'REJECTED' = 'ALL';
 
   officerRemarks: { [key: number]: string } = {};
+  officerCompensation: { [key: number]: number } = {};
   activeFeedbackForms: { [key: number]: ClaimFeedbackReqDTO } = {};
   actionLoading: { [key: number]: boolean } = {};
   actionMessage: { [key: number]: { type: 'success' | 'error'; text: string } } = {};
@@ -43,6 +44,7 @@ export class ClaimsViewComponent implements OnInit {
       this.claimsService.getAllClaims().subscribe({
         next: (list) => {
           this.claimsList = list || [];
+          this.initOfficerCompensation();
           this.cdr.detectChanges();
         },
         error: () => {
@@ -54,6 +56,7 @@ export class ClaimsViewComponent implements OnInit {
       this.claimsService.getMyClaims().subscribe({
         next: (list) => {
           this.claimsList = list || [];
+          this.initOfficerCompensation();
           this.cdr.detectChanges();
         },
         error: () => {
@@ -81,10 +84,19 @@ export class ClaimsViewComponent implements OnInit {
     return this.claimsList.filter(c => c.claimStatus === 'PENDING_APPROVAL').length;
   }
 
+  private initOfficerCompensation(): void {
+    this.claimsList.forEach(c => {
+      if (c.claimId && c.compensationAmount != null && this.officerCompensation[c.claimId] === undefined) {
+        this.officerCompensation[c.claimId] = c.compensationAmount;
+      }
+    });
+  }
+
   onApprove(claimId: number): void {
     const remarks = this.officerRemarks[claimId] || '';
+    const adjustedAmount = this.officerCompensation[claimId];
     this.actionLoading[claimId] = true;
-    this.claimsService.approveClaim(claimId, remarks).subscribe({
+    this.claimsService.approveClaim(claimId, { remarks, adjustedAmount }).subscribe({
       next: (updated) => {
         this.actionLoading[claimId] = false;
         this.actionMessage[claimId] = { type: 'success', text: 'Claim approved and settled successfully!' };
